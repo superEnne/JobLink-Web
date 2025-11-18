@@ -19,7 +19,17 @@
         
         body {
             font-family: 'Inter', sans-serif;
-            overflow-x: hidden; /* Prevent horizontal scroll during transitions */
+            overflow-x: hidden; /* Prevent horizontal scroll on main body */
+        }
+
+        /* Hide scrollbar for Chrome, Safari and Opera */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        /* Hide scrollbar for IE, Edge and Firefox */
+        .no-scrollbar {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
         }
 
         /* Transition Animations */
@@ -36,16 +46,23 @@
             transform: translateX(0);
         }
 
-        .section-content.exit {
-            opacity: 0;
-            transform: translateX(20px);
-        }
-
-        /* Custom Nav Active State */
+        /* Custom Nav Active State - Desktop */
         .nav-btn.active {
             color: var(--joblink-blue);
             background-color: #EFF6FF; /* blue-50 */
             border-radius: 0.75rem;
+        }
+
+        /* Custom Nav Active State - Mobile Pills */
+        .mobile-nav-btn {
+            white-space: nowrap; /* Keep text on one line */
+        }
+        
+        .mobile-nav-btn.active {
+            color: var(--joblink-blue) !important;
+            background-color: #EFF6FF !important; /* blue-50 */
+            border-color: var(--joblink-blue);
+            font-weight: 700;
         }
     </style>
 
@@ -72,15 +89,15 @@
 <body class="bg-joblink-light text-joblink-dark min-h-screen flex flex-col">
 
     <!-- Header / Navigation Bar -->
+    <!-- Added 'sticky top-0' to keep it visible while scrolling -->
     <header class="sticky top-0 z-50 bg-white/95 backdrop-blur-md shadow-sm">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-20">
                 <!-- Logo -->
                 <div class="flex-shrink-0 cursor-pointer" onclick="switchSection('home')">
                     <div class="flex items-center space-x-2">
-                        <!-- Using the specific local path requested -->
-                        <img src="C:\Users\Admin\Documents\forwebasset\nobgjoblink.png" alt="JobLink Logo" class="h-10 w-auto object-contain" onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">
-                        <!-- Fallback text if image fails to load locally -->
+                        <!-- Keeping your local path, but make sure this file exists on your machine -->
+                        <img src="nobgjoblink.png" alt="JobLink Logo" class="h-10 w-auto object-contain" onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">
                         <span class="hidden text-2xl font-extrabold tracking-tighter text-joblink-blue">JobLink</span>
                     </div>
                 </div>
@@ -93,29 +110,40 @@
                     <button onclick="switchSection('training')" id="nav-training" class="nav-btn px-4 py-2 text-joblink-dark hover:text-joblink-blue transition duration-150 text-base font-medium focus:outline-none">Training</button>
                 </nav>
 
-                <!-- Auth Buttons (Placeholders) -->
-                <div class="flex items-center space-x-4">
+                <!-- Auth Buttons & Actions -->
+                <div class="flex items-center space-x-3">
+                    <!-- Show 'Login' as icon on mobile to save space, text on desktop -->
+                    <button onclick="window.location.href='loginpagejoblink.html'" class="text-gray-500 hover:text-joblink-blue p-2 rounded-full sm:hidden">
+                        <i data-lucide="log-in" class="w-6 h-6"></i>
+                    </button>
+                    
                     <button onclick="window.location.href='loginpagejoblink.html'" class="hidden sm:inline-flex items-center px-4 py-2 border border-joblink-blue text-base font-medium rounded-xl text-joblink-blue hover:bg-joblink-blue hover:text-white transition duration-200 shadow-sm">
                         Login
                     </button>
-                    <button onclick="window.location.href='signuppagejoblink.html'" class="inline-flex items-center px-6 py-2 border border-transparent text-base font-medium rounded-xl text-white bg-joblink-green hover:bg-joblink-green/90 transition duration-200 shadow-custom-green">
+                    
+                    <button onclick="window.location.href='signuppagejoblink.html'" class="inline-flex items-center px-4 sm:px-6 py-2 border border-transparent text-sm sm:text-base font-medium rounded-xl text-white bg-joblink-green hover:bg-joblink-green/90 transition duration-200 shadow-custom-green">
                         Get Started
-                    </button>
-                    <!-- Mobile Menu Button -->
-                    <button onclick="toggleMobileMenu()" class="md:hidden p-2 rounded-lg text-joblink-dark hover:bg-gray-100 focus:outline-none">
-                        <i data-lucide="menu" class="w-6 h-6"></i>
                     </button>
                 </div>
             </div>
         </div>
 
-        <!-- Mobile Menu Dropdown -->
-        <div id="mobile-menu" class="hidden md:hidden absolute top-20 left-0 w-full bg-white/95 backdrop-blur-md border-t border-gray-100 shadow-lg z-40">
-            <div class="px-4 pt-2 pb-6 space-y-2 flex flex-col">
-                <button onclick="switchSection('home')" class="mobile-nav-btn text-left px-4 py-3 rounded-xl text-base font-medium text-joblink-dark hover:bg-blue-50 hover:text-joblink-blue transition active">Home</button>
-                <button onclick="switchSection('features')" class="mobile-nav-btn text-left px-4 py-3 rounded-xl text-base font-medium text-joblink-dark hover:bg-blue-50 hover:text-joblink-blue transition">Features</button>
-                <button onclick="switchSection('partnerships')" class="mobile-nav-btn text-left px-4 py-3 rounded-xl text-base font-medium text-joblink-dark hover:bg-blue-50 hover:text-joblink-blue transition">Partnerships</button>
-                <button onclick="switchSection('training')" class="mobile-nav-btn text-left px-4 py-3 rounded-xl text-base font-medium text-joblink-dark hover:bg-blue-50 hover:text-joblink-blue transition">Training</button>
+        <!-- NEW: Mobile Horizontal Navigation (Replaces Hamburger Dropdown) -->
+        <!-- This bar is only visible on mobile (md:hidden) and sticks below the header -->
+        <div class="md:hidden border-t border-gray-100 bg-white/95 backdrop-blur-md overflow-x-auto no-scrollbar">
+            <div class="flex px-4 py-3 space-x-3 min-w-full">
+                <button id="mobile-nav-home" onclick="switchSection('home')" class="mobile-nav-btn flex-shrink-0 px-4 py-1.5 rounded-full border border-gray-200 text-sm font-medium text-joblink-dark active">
+                    Home
+                </button>
+                <button id="mobile-nav-features" onclick="switchSection('features')" class="mobile-nav-btn flex-shrink-0 px-4 py-1.5 rounded-full border border-gray-200 text-sm font-medium text-joblink-dark">
+                    Features
+                </button>
+                <button id="mobile-nav-partnerships" onclick="switchSection('partnerships')" class="mobile-nav-btn flex-shrink-0 px-4 py-1.5 rounded-full border border-gray-200 text-sm font-medium text-joblink-dark">
+                    Partnerships
+                </button>
+                <button id="mobile-nav-training" onclick="switchSection('training')" class="mobile-nav-btn flex-shrink-0 px-4 py-1.5 rounded-full border border-gray-200 text-sm font-medium text-joblink-dark">
+                    Training
+                </button>
             </div>
         </div>
     </header>
@@ -124,25 +152,25 @@
 
         <!-- SECTION: HOME -->
         <div id="home-section" class="section-content active">
-            <section class="text-center pt-10 pb-16">
-                <h1 class="text-5xl sm:text-6xl lg:text-7xl font-extrabold leading-tight text-joblink-dark mb-6">
-                    Verified Skills. <span class="text-joblink-blue">Instant Jobs.</span> <br/>Guaranteed Training.
+            <section class="text-center pt-4 sm:pt-10 pb-16">
+                <h1 class="text-4xl sm:text-6xl lg:text-7xl font-extrabold leading-tight text-joblink-dark mb-6">
+                    Verified Skills. <span class="text-joblink-blue">Instant Jobs.</span> <br class="hidden sm:block"/>Guaranteed Training.
                 </h1>
-                <p class="text-xl text-gray-600 mb-10 md:text-2xl max-w-3xl mx-auto">
+                <p class="text-lg sm:text-xl text-gray-600 mb-10 md:text-2xl max-w-3xl mx-auto">
                     JobLink is a smart web and mobile platform created for young adults who struggle to find relevant and trustworthy job opportunities.
                 </p>
-                <div class="flex justify-center space-x-4 mb-16">
-                    <button onclick="switchSection('features')" class="inline-flex items-center px-8 py-3 border border-transparent text-lg font-bold rounded-xl text-white bg-joblink-blue hover:bg-joblink-blue/90 transition duration-300 shadow-custom-blue transform hover:scale-[1.02]">
+                <div class="flex flex-col sm:flex-row justify-center space-y-3 sm:space-y-0 sm:space-x-4 mb-16">
+                    <button onclick="switchSection('features')" class="w-full sm:w-auto inline-flex justify-center items-center px-8 py-3 border border-transparent text-lg font-bold rounded-xl text-white bg-joblink-blue hover:bg-joblink-blue/90 transition duration-300 shadow-custom-blue transform hover:scale-[1.02]">
                         Find My Instant Job
                     </button>
-                    <button onclick="switchSection('training')" class="inline-flex items-center px-8 py-3 border border-gray-300 text-lg font-medium rounded-xl text-joblink-dark bg-white hover:bg-gray-50 transition duration-300 transform hover:scale-[1.02]">
+                    <button onclick="switchSection('training')" class="w-full sm:w-auto inline-flex justify-center items-center px-8 py-3 border border-gray-300 text-lg font-medium rounded-xl text-joblink-dark bg-white hover:bg-gray-50 transition duration-300 transform hover:scale-[1.02]">
                         Learn More
                     </button>
                 </div>
             </section>
 
             <!-- Introduction Block with AI Mockup -->
-            <section class="bg-white rounded-3xl shadow-xl p-8 md:p-12 border border-gray-100">
+            <section class="bg-white rounded-3xl shadow-xl p-6 md:p-12 border border-gray-100">
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
                     <div>
                         <span class="text-joblink-green font-bold tracking-wider uppercase text-sm">Welcome to JobLink</span>
@@ -157,9 +185,9 @@
                         </div>
                     </div>
                     
-                    <!-- AI Mockup Section Restored -->
-                    <div class="w-full flex justify-center p-8 bg-white rounded-3xl shadow-2xl shadow-joblink-green/20">
-                        <div class="w-full h-80 rounded-2xl bg-gradient-to-br from-joblink-blue to-joblink-green flex items-center justify-center relative overflow-hidden">
+                    <!-- AI Mockup Section -->
+                    <div class="w-full flex justify-center p-4 sm:p-8 bg-white rounded-3xl shadow-2xl shadow-joblink-green/20">
+                        <div class="w-full h-64 sm:h-80 rounded-2xl bg-gradient-to-br from-joblink-blue to-joblink-green flex items-center justify-center relative overflow-hidden">
                              <!-- Decorative element to make it look active -->
                              <div class="absolute top-0 right-0 w-32 h-32 bg-white opacity-10 rounded-bl-full"></div>
                              <div class="absolute bottom-0 left-0 w-24 h-24 bg-white opacity-10 rounded-tr-full"></div>
@@ -184,8 +212,8 @@
         <div id="features-section" class="section-content">
             <div class="text-center mb-12 pt-4">
                 <span class="text-joblink-blue text-lg font-semibold uppercase tracking-wider">How It Works</span>
-                <h2 class="text-4xl font-extrabold text-joblink-dark mt-2">Automated Verification & AI Matching</h2>
-                <p class="mt-4 text-xl text-gray-600 max-w-3xl mx-auto">
+                <h2 class="text-3xl sm:text-4xl font-extrabold text-joblink-dark mt-2">Automated Verification & AI Matching</h2>
+                <p class="mt-4 text-lg sm:text-xl text-gray-600 max-w-3xl mx-auto">
                     Eliminate the hassle of browsing through irrelevant job postings. We save valuable time for job seekers through automation.
                 </p>
             </div>
@@ -253,7 +281,7 @@
                         Become a Partner
                     </button>
                 </div>
-                <div class="lg:w-1/2 bg-white p-8 rounded-3xl shadow-xl border border-gray-100">
+                <div class="lg:w-1/2 bg-white p-8 rounded-3xl shadow-xl border border-gray-100 w-full">
                     <div class="grid grid-cols-2 gap-4">
                         <!-- Placeholder Company Logos -->
                         <div class="h-32 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400 font-bold border border-dashed border-gray-300">Partner 01</div>
@@ -306,19 +334,18 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex flex-col md:flex-row justify-between items-center space-y-6 md:space-y-0">
                 <div class="flex items-center space-x-2 cursor-pointer" onclick="switchSection('home')">
-                    <!-- Footer Logo also updated -->
-                    <img src="C:\Users\Admin\Documents\forwebasset\nobgjoblink.png" alt="JobLink Logo" class="h-8 w-auto filter grayscale opacity-75" onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">
+                    <img src="nobgjoblink.png" alt="JobLink Logo" class="h-8 w-auto filter grayscale opacity-75" onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">
                     <span class="text-lg font-bold text-white">JobLink</span>
                 </div>
                 
-                <nav class="flex space-x-6">
+                <nav class="flex flex-wrap justify-center space-x-6">
                     <a href="#" class="hover:text-joblink-green transition duration-150 text-sm">About Us</a>
                     <a href="#" class="hover:text-joblink-green transition duration-150 text-sm">Contact</a>
                     <a href="#" class="hover:text-joblink-green transition duration-150 text-sm">Privacy Policy</a>
                     <a href="#" class="hover:text-joblink-green transition duration-150 text-sm">Terms of Service</a>
                 </nav>
                 
-                <p class="text-sm">
+                <p class="text-sm text-center md:text-left">
                     &copy; 2024 JobLink. All rights reserved.
                 </p>
             </div>
@@ -330,27 +357,12 @@
         // Initialize Icons
         lucide.createIcons();
 
-        // Mobile Menu Logic
-        function toggleMobileMenu() {
-            const menu = document.getElementById('mobile-menu');
-            menu.classList.toggle('hidden');
-            
-            // Re-initialize icons in case the menu icon needs to change (optional, kept simple here)
-            lucide.createIcons();
-        }
-
         // Navigation Logic
         function switchSection(sectionId) {
             // 1. Get all sections
             const sections = document.querySelectorAll('.section-content');
             const currentSection = document.querySelector('.section-content.active');
             
-            // Close mobile menu if open
-            const mobileMenu = document.getElementById('mobile-menu');
-            if (mobileMenu && !mobileMenu.classList.contains('hidden')) {
-                toggleMobileMenu();
-            }
-
             // Prevent animation if clicking the same link
             if (currentSection && currentSection.id === sectionId + '-section') return;
 
@@ -360,22 +372,27 @@
             const activeBtn = document.getElementById('nav-' + sectionId);
             if (activeBtn) activeBtn.classList.add('active');
             
-            // 2.5 Update Mobile Nav Button States
-            // Simple clear-all and set logic for mobile buttons
-            // (We don't have IDs on them, but we can match by text or just clear styles if needed, 
-            // for now we just let them be generic links)
-
-            // 3. Animate Out Current Section
-            if (currentSection) {
-                currentSection.classList.remove('active');
-                // Simple fade out/hide logic handled by CSS transitions mostly, 
-                // but we toggle display via class logic
-                setTimeout(() => {
-                    currentSection.style.display = 'none';
-                }, 300); // Match CSS transition time roughly or handled by class swap
+            // 3. Update Mobile Nav Button States (Horizontal Pills)
+            const mobileNavButtons = document.querySelectorAll('.mobile-nav-btn');
+            mobileNavButtons.forEach(btn => btn.classList.remove('active'));
+            
+            const activeMobileBtn = document.getElementById('mobile-nav-' + sectionId);
+            if (activeMobileBtn) {
+                activeMobileBtn.classList.add('active');
+                
+                // Auto-scroll the mobile menu to ensure the active button is visible
+                activeMobileBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
             }
 
-            // 4. Animate In New Section
+            // 4. Animate Out Current Section
+            if (currentSection) {
+                currentSection.classList.remove('active');
+                setTimeout(() => {
+                    currentSection.style.display = 'none';
+                }, 300); 
+            }
+
+            // 5. Animate In New Section
             const newSection = document.getElementById(sectionId + '-section');
             if (newSection) {
                 // Hide others immediately to prevent stacking during quick clicks
@@ -396,8 +413,6 @@
             // Scroll to top slightly if user is far down
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
-
-        // Set initial state logic if needed (default is Home via HTML classes)
     </script>
 </body>
 </html>
