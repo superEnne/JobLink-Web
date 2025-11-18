@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JobLink | My Verification Status</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Load Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
+
+    <style>
+        /* Define custom colors and font based on brand identity */
+        :root {
+            --joblink-blue: #1A73E8;
+            --joblink-green: #34A853;
+            --joblink-dark: #0F172A;
+            --joblink-light: #F1F5F9; /* Slate-100 equivalent for background */
+        }
+        
+        /* Apply Inter font globally and ensure responsive colors */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--joblink-light);
+        }
+
+        /* Custom styles for file upload */
+        .file-drop-area {
+            border-color: #CBD5E1; /* Gray-300 */
+            background-color: #F8FAFC; /* Gray-50 */
+        }
+        .file-drop-area:hover {
+            border-color: var(--joblink-blue);
+            background-color: #EFF6FF; /* Blue-50 */
+        }
+
+        .config {
+            /* This is a visual-only element for the component and does not need to be rendered */
+        }
+    </style>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'joblink-blue': 'var(--joblink-blue)',
+                        'joblink-green': 'var(--joblink-green)',
+                        'joblink-dark': 'var(--joblink-dark)',
+                    },
+                    boxShadow: {
+                        'card-shadow': '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+
+<body class="min-h-screen">
+
+    <!-- Firebase SDK and Configuration -->
+    <script type="module">
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        // Import Authentication functions
+        import { 
+            getAuth,
+            onAuthStateChanged,
+            signOut
+        } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        // Import Storage functions (if you implement file uploads)
+        // import { getStorage, ref, uploadBytes } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCVFb86PaY0O3p9VsUVaUHbmNdw9pzy_aA",
+            authDomain: "joblink-web.firebaseapp.com",
+            projectId: "joblink-web",
+            storageBucket: "joblink-web.firebasestorage.app",
+            messagingSenderId: "748109357310",
+            appId: "1:748109357310:web:8c77e27925355c9f96c5af"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        // Initialize Firebase Authentication
+        const auth = getAuth(app);
+        // Initialize Firebase Storage (uncomment if using)
+        // const storage = getStorage(app);
+
+        // Make functions globally accessible
+        window.handleNavigation = handleNavigation;
+        window.handleLogout = handleLogout;
+        window.handleFileSelect = handleFileSelect;
+
+        // Auth State Listener: Protect this page
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                // User is signed in, stay on this page
+                console.log('User is logged in:', user.email);
+                // You can update the UI with user info here
+                const userNameSpan = document.getElementById('userName');
+                const userInitialsDiv = document.getElementById('userInitials');
+
+                if (userNameSpan) {
+                    userNameSpan.textContent = user.displayName || user.email.split('@')[0];
+                }
+                if (userInitialsDiv) {
+                    const emailPrefix = user.email.split('@')[0];
+                    const initials = emailPrefix.substring(0, 2).toUpperCase();
+                    userInitialsDiv.textContent = initials;
+                }
+            } else {
+                // User is signed out
+                console.log('User is signed out, redirecting to login.');
+                // Redirect to the login page
+                window.location.href = 'loginpagejoblink.html';
+            }
+        });
+
+        /**
+         * Handles signing the user out
+         */
+        async function handleLogout() {
+            try {
+                await signOut(auth);
+                // Auth state listener will handle the redirect
+                console.log('User signed out.');
+            } catch (error) {
+                console.error('Sign out error:', error);
+                showMessage('Error signing out. Please try again.', 'error');
+            }
+        }
+
+        /**
+         * Placeholder function for navigation/redirection. 
+         */
+        function handleNavigation(pageName) {
+            console.log(`Navigating to: ${pageName} page...`);
+            
+            const button = event.currentTarget;
+            button.classList.add('animate-pulse');
+            
+            const messageBox = document.getElementById('messageBox');
+            messageBox.textContent = `${pageName} action triggered.`;
+            messageBox.classList.remove('hidden');
+
+            setTimeout(() => {
+                button.classList.remove('animate-pulse');
+                messageBox.classList.add('hidden');
+                
+                if (pageName === 'Training') {
+                    window.location.href = 'trainingpagejoblink.html';
+                } 
+                else if (pageName === 'Matches') {
+                    window.location.href = 'homepagejoblink.html';
+                } 
+                else if (pageName === 'Verification') {
+                    window.location.href = 'verificationstatusjoblink.html';
+                } 
+                else if (pageName === 'Settings') {
+                    window.location.href = 'settingspagejoblink.html';
+                }
+                // MODIFICATION: Added About page navigation
+                else if (pageName === 'About') {
+                    window.location.href = 'aboutpagejoblink.html';
+                }
+                else if (pageName === 'Profile') {
+                     window.location.href = 'settingspagejoblink.html';
+                }
+                else if (pageName === 'Dashboard') {
+                     window.location.href = 'homepagejoblink.html';
+                }
+                else {
+                    console.log(`Placeholder action for: ${pageName}`);
+                }
+            }, 300);
+        }
+
+        /**
+         * Placeholder function to simulate file selection.
+         * Real implementation requires Firebase Storage.
+         */
+        function handleFileSelect() {
+            const fileInput = document.getElementById('file-upload');
+            const files = fileInput.files;
+            
+            if (files.length === 0) {
+                return; // No file selected
+            }
+            
+            const file = files[0];
+            console.log(`File selected: ${file.name}`);
+            showMessage(`Uploading ${file.name}... (Placeholder)`, 'info');
+
+            // --- REAL FIREBASE STORAGE UPLOAD (EXAMPLE) ---
+            // This requires you to be logged in and have Storage rules set up.
+            /*
+            if (auth.currentUser) {
+                const userId = auth.currentUser.uid;
+                const storageRef = ref(storage, `user_documents/${userId}/${file.name}`);
+                
+                uploadBytes(storageRef, file).then((snapshot) => {
+                    console.log('Uploaded a blob or file!', snapshot);
+                    showMessage(`Successfully uploaded ${file.name}!`, 'success');
+                    // Here you would also save the file URL to Firestore
+                    // to track the user's documents.
+                }).catch((error) => {
+                    console.error('Upload failed:', error);
+                    showMessage(`Upload failed for ${file.name}.`, 'error');
+                });
+            } else {
+                showMessage('You must be logged in to upload files.', 'error');
+            }
+            */
+           
+            // Placeholder success message
+            setTimeout(() => {
+                 showMessage(`'${file.name}' submitted for verification.`, 'success');
+                 // You would update the UI here
+            }, 2000);
+        }
+
+        /**
+         * Shows a message in the custom message box
+         */
+        function showMessage(message, type = 'info') {
+            const messageBox = document.getElementById('messageBox');
+            messageBox.textContent = message;
+            
+            messageBox.classList.remove('bg-joblink-blue', 'bg-joblink-green', 'bg-red-500');
+            
+            if (type === 'success') {
+                messageBox.classList.add('bg-joblink-green');
+            } else if (type === 'error') {
+                messageBox.classList.add('bg-red-500');
+            } else {
+                messageBox.classList.add('bg-joblink-blue');
+            }
+            
+            messageBox.classList.remove('hidden');
+            
+            setTimeout(() => {
+                messageBox.classList.add('hidden');
+            }, 3000);
+        }
+    </script>
+
+
+    <!-- Custom Message Box (Non-Alert Placeholder) -->
+    <div id="messageBox" class="hidden fixed top-4 left-1/2 transform -translate-x-1/2 bg-joblink-blue text-white px-6 py-3 rounded-xl shadow-lg z-50 transition duration-300">
+        Message
+    </div>
+
+    <!-- Header / Navigation Bar -->
+    <header class="sticky top-0 z-40 bg-white shadow-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Logo -->
+                <div class="flex-shrink-0">
+                    <button onclick="handleNavigation('Dashboard')" class="flex items-center space-x-2 focus:outline-none">
+                        <!-- Make sure this path matches your file structure -->
+                        <img src="nobgjoblink.png" alt="JobLink Logo" class="h-8 w-auto">
+                    </button>
+                </div>
+                
+                <!-- Desktop Navigation Links (Verification Status is now Active) -->
+                <!-- MODIFICATION: Added About button -->
+                <nav class="hidden md:flex space-x-6">
+                    <button onclick="handleNavigation('Matches')" class="text-gray-600 hover:text-joblink-blue focus:outline-none transition duration-150">Job Matches</button>
+                    <button onclick="handleNavigation('Training')" class="text-gray-600 hover:text-joblink-blue focus:outline-none transition duration-150">My Training</button>
+                    <button onclick="handleNavigation('Verification')" class="text-joblink-blue font-bold border-b-2 border-joblink-blue focus:outline-none transition duration-150">Verification Status</button>
+                    <button onclick="handleNavigation('Settings')" class="text-gray-600 hover:text-joblink-blue focus:outline-none transition duration-150">Settings</button>
+                    <button onclick="handleNavigation('About')" class="text-gray-600 hover:text-joblink-blue focus:outline-none transition duration-150">About</button>
+                </nav>
+
+                <!-- User/Logout -->
+                <div class="flex items-center space-x-4">
+                    <button onclick="handleNavigation('Profile')" class="flex items-center space-x-2 text-gray-700 hover:text-joblink-blue transition duration-150">
+                        <span id="userName" class="text-sm font-medium hidden sm:inline">User Name</span>
+                        <div id="userInitials" class="h-8 w-8 rounded-full bg-joblink-green flex items-center justify-center text-white text-sm font-bold">..</div>
+                    </button>
+                    <!-- IMPORTANT: Changed onclick to window.handleLogout() -->
+                    <button onclick="window.handleLogout()" class="text-gray-500 hover:text-red-500 transition duration-150 focus:outline-none">
+                        <i data-lucide="log-out" class="w-5 h-5"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+        
+        <!-- Page Title -->
+        <section class="mb-8">
+            <h1 class="text-4xl font-extrabold text-joblink-dark">My Verification Status</h1>
+            <p class="text-gray-600 text-lg mt-1">Upload and manage your documents for AI-powered verification.</p>
+        </section>
+
+        <!-- Main Content Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <!-- Left Column: Upload -->
+            <div class="lg:col-span-2">
+                <div class="bg-white p-6 md:p-8 rounded-2xl shadow-card-shadow">
+                    <h2 class="text-2xl font-bold text-joblink-dark mb-4">Upload Your Documents</h2>
+                    <p class="text-gray-600 mb-6">Upload your diplomas, certificates, and ID. Our AI system will cross-check them with partner institutions to verify their authenticity.</p>
+                    
+                    <!-- File Drop Area -->
+                    <div class="file-drop-area w-full relative border-2 border-dashed rounded-xl p-10 text-center transition-all duration-300">
+                        <i data-lucide="upload-cloud" class="w-16 h-16 text-joblink-blue mx-auto mb-4"></i>
+                        <h3 class="text-xl font-semibold text-joblink-dark">Drag & Drop files here</h3>
+                        <p class="text-gray-500">or</p>
+                        <label for="file-upload" class="mt-4 inline-flex items-center px-4 py-2 bg-joblink-blue text-white font-medium rounded-lg cursor-pointer hover:bg-joblink-blue/90 transition duration-200">
+                            <i data-lucide="file-up" class="w-4 h-4 mr-2"></i>
+                            Browse Files
+                        </label>
+                        <input id="file-upload" type="file" class="hidden" multiple onchange="window.handleFileSelect()">
+                    </div>
+                    
+                    <p class="text-xs text-gray-500 mt-4 text-center">Supported files: PDF, PNG, JPG (Max 5MB per file)</p>
+                </div>
+            </div>
+
+            <!-- Right Column: Status Summary -->
+            <div class="lg:col-span-1">
+                <div class="bg-white p-6 rounded-2xl shadow-card-shadow">
+                    
+                    <!-- Overall Status -->
+                    <div class="border-l-4 border-joblink-blue bg-blue-50 p-4 rounded-lg mb-6">
+                        <div class="flex items-center">
+                            <i data-lucide="loader-circle" class="w-6 h-6 mr-3 text-joblink-blue animate-spin"></i>
+                            <div>
+                                <span class="text-sm font-semibold text-joblink-blue">Overall Status</span>
+                                <h3 class="text-xl font-bold text-joblink-dark">Pending Review</h3>
+                            </div>
+                        </div>
+                        <p class="text-sm text-gray-600 mt-2">Our AI is processing your documents. This usually takes 5-10 minutes.</p>
+                    </div>
+
+                    <h3 class="text-xl font-bold text-joblink-dark mb-4">Submitted Documents</h3>
+                    <ul class="space-y-4">
+                        
+                        <!-- Document 1: Verified -->
+                        <li class="flex items-center justify-between p-3 bg-joblink-light rounded-xl">
+                            <div class="flex items-center">
+                                <i data-lucide="file-text" class="w-5 h-5 mr-3 text-joblink-green"></i>
+                                <span class="font-medium text-gray-700">High School Diploma</span>
+                            </div>
+                            <div class="flex items-center text-joblink-green text-sm font-semibold">
+                                <i data-lucide="check-circle" class="w-4 h-4 mr-1"></i>
+                                Verified
+                            </div>
+                        </li>
+
+                        <!-- Document 2: Pending -->
+                        <li class="flex items-center justify-between p-3 bg-joblink-light rounded-xl">
+                            <div class="flex items-center">
+                                <i data-lucide="file-text" class="w-5 h-5 mr-3 text-joblink-blue"></i>
+                                <span class="font-medium text-gray-700">Driver's License (ID)</span>
+                            </div>
+                            <div class="flex items-center text-joblink-blue text-sm font-semibold">
+                                <i data-lucide="loader-circle" class="w-4 h-4 mr-1 animate-spin"></i>
+                                Pending
+                            </div>
+                        </li>
+
+                        <!-- Document 3: Failed -->
+                        <li classs="flex items-center justify-between p-3 bg-red-50 rounded-xl border border-red-200">
+                             <div class="flex items-center">
+                                <i data-lucide="file-warning" class="w-5 h-5 mr-3 text-red-500"></i>
+                                <span class="font-medium text-gray-700">Marketing Certificate</span>
+                            </div>
+                            <div class="flex items-center text-red-500 text-sm font-semibold">
+                                <i data-lucide="alert-circle" class="w-4 h-4 mr-1"></i>
+                                Resubmit
+                            </div>
+                        </li>
+                    </ul>
+                    
+                    <button onclick="handleNavigation('ContactSupport')" class="mt-6 w-full py-2 border border-gray-300 text-joblink-dark font-semibold rounded-xl hover:bg-gray-100 transition duration-200">
+                        <i data-lucide="help-circle" class="w-4 h-4 inline mr-2"></i>
+                        Help Center
+                    </button>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+    
+    <!-- Initialize Lucide Icons -->
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

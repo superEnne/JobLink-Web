@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JobLink | Secure Login</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Load Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
+
+    <style>
+        /* Define custom colors and font based on brand identity */
+        :root {
+            --joblink-blue: #1A73E8;
+            --joblink-green: #34A853;
+        }
+        
+        /* Apply Inter font globally and ensure full-screen layout */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F8FAFC; /* Light background */
+        }
+        
+        /* Custom scrollbar for aesthetic purposes */
+        body::-webkit-scrollbar {
+            width: 8px;
+        }
+        body::-webkit-scrollbar-thumb {
+            background-color: var(--joblink-blue);
+            border-radius: 4px;
+        }
+
+        .config {
+            /* This is a visual-only element for the component and does not need to be rendered */
+        }
+    </style>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'joblink-blue': 'var(--joblink-blue)',
+                        'joblink-green': 'var(--joblink-green)',
+                        'joblink-dark': '#0F172A',
+                    },
+                    boxShadow: {
+                        'custom-blue': '0 10px 30px -5px rgba(26, 115, 232, 0.4)',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <!-- Firebase SDK and Configuration -->
+    <script type="module">
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        // Import Authentication functions
+        import { 
+            getAuth, 
+            signInWithEmailAndPassword 
+        } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCVFb86PaY0O3p9VsUVaUHbmNdw9pzy_aA",
+            authDomain: "joblink-web.firebaseapp.com",
+            projectId: "joblink-web",
+            storageBucket: "joblink-web.firebasestorage.app",
+            messagingSenderId: "748109357310",
+            appId: "1:748109357310:web:8c77e27925355c9f96c5af"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        // Initialize Firebase Authentication
+        const auth = getAuth(app);
+
+        // Make functions globally accessible
+        window.handleLogin = handleLogin;
+        window.handleNavigation = handleNavigation;
+
+        /**
+         * Placeholder for the login process
+         */
+        async function handleLogin() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const messageBox = document.getElementById('messageBox');
+
+            if (!email || !password) {
+                showMessage('Please enter both email and password.', 'error');
+                return;
+            }
+
+            // Show loading
+            const loginButton = document.getElementById('loginButton');
+            loginButton.disabled = true;
+            loginButton.textContent = 'Logging In...';
+
+            try {
+                // Sign in user with email and password
+                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                // Signed in 
+                const user = userCredential.user;
+                console.log('User logged in:', user);
+
+                showMessage('Login successful! Redirecting...', 'success');
+                
+                // Redirect to the main homepage after a short delay
+                setTimeout(() => {
+                    window.location.href = 'homepagejoblink.html';
+                }, 1500);
+
+            } catch (error) {
+                const errorCode = error.code;
+                const errorMessage = error.message;
+                console.error('Login error:', errorCode, errorMessage);
+                
+                // Show a user-friendly error message
+                let friendlyMessage = 'Invalid email or password. Please try again.';
+                if (errorCode === 'auth/user-not-found' || errorCode === 'auth/invalid-credential' || errorCode === 'auth/wrong-password') {
+                    friendlyMessage = 'Invalid email or password. Please try again.';
+                }
+                
+                showMessage(friendlyMessage, 'error');
+                loginButton.disabled = false;
+                loginButton.textContent = 'Log In to My Account';
+            }
+        }
+
+        /**
+         * Placeholder function for navigation/redirection. 
+         * Use this function to move between your HTML files.
+         */
+        function handleNavigation(pageName) {
+            console.log(`Attempting to redirect to: ${pageName} page...`);
+            
+            if (pageName === 'Home') {
+                window.location.href = 'index.html'; // Goes to your startup page
+            } else if (pageName === 'SignUp') {
+                window.location.href = 'signuppagejoblink.html'; // Goes to your new sign up page
+            } else if (pageName === 'ForgotPassword') {
+                // You can implement password reset functionality here
+                alert('Forgot Password (Placeholder)');
+            }
+        }
+
+        /**
+         * Shows a message in the custom message box
+         * @param {string} message - The text to display
+         * @param {'success' | 'error' | 'info'} type - The type of message
+         */
+        function showMessage(message, type = 'info') {
+            const messageBox = document.getElementById('messageBox');
+            messageBox.textContent = message;
+            
+            // Remove old color classes
+            messageBox.classList.remove('bg-joblink-blue', 'bg-joblink-green', 'bg-red-500');
+            
+            // Add new color class based on type
+            if (type === 'success') {
+                messageBox.classList.add('bg-joblink-green');
+            } else if (type === 'error') {
+                messageBox.classList.add('bg-red-500');
+            } else {
+                messageBox.classList.add('bg-joblink-blue');
+            }
+            
+            messageBox.classList.remove('hidden');
+            
+            // Hide after 3 seconds
+            setTimeout(() => {
+                messageBox.classList.add('hidden');
+            }, 3000);
+        }
+
+    </script>
+
+
+    <!-- Custom Message Box (Non-Alert Placeholder) -->
+    <div id="messageBox" class="hidden fixed top-4 left-1/2 transform -translate-x-1/2 bg-joblink-blue text-white px-6 py-3 rounded-xl shadow-lg z-50 transition duration-300">
+        Message
+    </div>
+
+    <!-- Login Card Container -->
+    <div class="w-full max-w-5xl h-auto md:h-[600px] flex rounded-3xl overflow-hidden shadow-custom-blue bg-white">
+        
+        <!-- Left Panel: Branding & Value Proposition (Hidden on Mobile) -->
+        <div class="hidden md:flex md:w-1/2 lg:w-5/12 p-10 flex-col justify-between bg-gradient-to-br from-joblink-blue to-joblink-green text-white">
+            <div>
+                <!-- Logo with Link to Home -->
+                <button onclick="handleNavigation('Home')" class="flex items-center space-x-2 focus:outline-none">
+                    <img src="nobgjoblink.png" alt="JobLink Logo" class="h-10 w-auto filter brightness-0 invert">
+                </button>
+            </div>
+            
+            <div class="space-y-4">
+                <h1 class="text-4xl font-extrabold leading-snug">
+                    <i data-lucide="zap" class="inline-block h-6 w-6 mr-2"></i>
+                    Your Fast Track to a Verified Career.
+                </h1>
+                <p class="text-gray-200 text-lg">
+                    JobLink: Verified Skills. Instant Jobs. Guaranteed Training. Log in to transform your job search with AI automation.
+                </p>
+                <div class="mt-8">
+                    <button onclick="handleNavigation('LearnAboutAI')" class="flex items-center text-sm font-medium text-white/90 hover:text-white transition duration-200">
+                        <i data-lucide="bot" class="w-4 h-4 mr-2"></i>
+                        How Our AI Verification Works
+                    </button>
+                </div>
+            </div>
+
+            <p class="text-sm text-gray-300">
+                &copy; 2024 JobLink. All rights reserved.
+            </p>
+        </div>
+        
+        <!-- Right Panel: Login Form -->
+        <div class="w-full md:w-1/2 lg:w-7/12 p-8 sm:p-12 lg:p-16 flex flex-col justify-center">
+            
+            <!-- Mobile Logo (Shown on Mobile) -->
+            <div class="flex justify-center md:hidden mb-10">
+                 <button onclick="handleNavigation('Home')" class="flex items-center space-x-2 focus:outline-none">
+                    <img src="./image_cda365.png" alt="JobLink Logo" class="h-10 w-auto">
+                </button>
+            </div>
+            
+            <h2 class="text-4xl font-extrabold text-joblink-dark mb-2">Welcome Back</h2>
+            <p class="text-gray-500 mb-10">Sign in to access your instant job matches and training modules.</p>
+
+            <!-- IMPORTANT: Changed onsubmit to call window.handleLogin() -->
+            <form onsubmit="event.preventDefault(); window.handleLogin()" class="space-y-6">
+                
+                <!-- Email Input -->
+                <div>
+                    <label for="email" class="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
+                    <div class="relative">
+                        <i data-lucide="mail" class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400"></i>
+                        <input type="email" id="email" name="email" required placeholder="name@example.com"
+                            class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-joblink-blue focus:border-joblink-blue transition duration-150 shadow-sm"
+                        >
+                    </div>
+                </div>
+
+                <!-- Password Input -->
+                <div>
+                    <label for="password" class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                    <div class="relative">
+                        <i data-lucide="lock" class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400"></i>
+                        <input type="password" id="password" name="password" required placeholder="••••••••"
+                            class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-joblink-blue focus:border-joblink-blue transition duration-150 shadow-sm"
+                        >
+                    </div>
+                </div>
+
+                <!-- Forgot Password -->
+                <div class="flex justify-end">
+                    <button type="button" onclick="handleNavigation('ForgotPassword')" 
+                            class="text-sm font-medium text-joblink-blue hover:text-joblink-green transition duration-150 focus:outline-none">
+                        Forgot Password?
+                    </button>
+                </div>
+
+                <!-- Login Button -->
+                <button type="submit" id="loginButton"
+                        class="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-lg font-bold text-white bg-joblink-blue hover:bg-joblink-blue/90 transition duration-300 transform hover:scale-[1.01] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-joblink-blue">
+                    Log In to My Account
+                </button>
+            </form>
+            
+            <!-- Sign Up Link -->
+            <div class="mt-8 text-center text-gray-500">
+                Don't have an account? 
+                <button type="button" onclick="handleNavigation('SignUp')"
+                        class="text-joblink-green font-semibold hover:text-joblink-dark transition duration-150 focus:outline-none">
+                    Sign Up Here
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Initialize Lucide Icons -->
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

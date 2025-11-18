@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JobLink | Verified Skills. Instant Jobs.</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Load Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
+
+    <style>
+        /* Define custom colors based on brand identity */
+        :root {
+            --joblink-blue: #1A73E8;
+            --joblink-green: #34A853;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden; /* Prevent horizontal scroll during transitions */
+        }
+
+        /* Transition Animations */
+        .section-content {
+            display: none; /* Hidden by default */
+            opacity: 0;
+            transform: translateX(-20px);
+            transition: opacity 0.4s ease-out, transform 0.4s ease-out;
+        }
+
+        .section-content.active {
+            display: block;
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .section-content.exit {
+            opacity: 0;
+            transform: translateX(20px);
+        }
+
+        /* Custom Nav Active State */
+        .nav-btn.active {
+            color: var(--joblink-blue);
+            background-color: #EFF6FF; /* blue-50 */
+            border-radius: 0.75rem;
+        }
+    </style>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'joblink-blue': 'var(--joblink-blue)',
+                        'joblink-green': 'var(--joblink-green)',
+                        'joblink-dark': '#0F172A',
+                        'joblink-light': '#F8FAFC',
+                    },
+                    boxShadow: {
+                        'custom-green': '0 10px 15px -3px rgba(52, 168, 83, 0.3), 0 4px 6px -2px rgba(52, 168, 83, 0.05)',
+                        'custom-blue': '0 10px 15px -3px rgba(26, 115, 232, 0.3), 0 4px 6px -2px rgba(26, 115, 232, 0.05)',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+
+<body class="bg-joblink-light text-joblink-dark min-h-screen flex flex-col">
+
+    <!-- Header / Navigation Bar -->
+    <header class="sticky top-0 z-50 bg-white/95 backdrop-blur-md shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-20">
+                <!-- Logo -->
+                <div class="flex-shrink-0 cursor-pointer" onclick="switchSection('home')">
+                    <div class="flex items-center space-x-2">
+                        <!-- Using the specific local path requested -->
+                        <img src="nobgjoblink.png" alt="JobLink Logo" class="h-10 w-auto object-contain" onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">
+                        <!-- Fallback text if image fails to load locally -->
+                        <span class="hidden text-2xl font-extrabold tracking-tighter text-joblink-blue">JobLink</span>
+                    </div>
+                </div>
+                
+                <!-- Desktop Navigation Links -->
+                <nav class="hidden md:flex space-x-2">
+                    <button onclick="switchSection('home')" id="nav-home" class="nav-btn px-4 py-2 text-joblink-dark hover:text-joblink-blue transition duration-150 text-base font-medium focus:outline-none active">Home</button>
+                    <button onclick="switchSection('features')" id="nav-features" class="nav-btn px-4 py-2 text-joblink-dark hover:text-joblink-blue transition duration-150 text-base font-medium focus:outline-none">Features</button>
+                    <button onclick="switchSection('partnerships')" id="nav-partnerships" class="nav-btn px-4 py-2 text-joblink-dark hover:text-joblink-blue transition duration-150 text-base font-medium focus:outline-none">Partnerships</button>
+                    <button onclick="switchSection('training')" id="nav-training" class="nav-btn px-4 py-2 text-joblink-dark hover:text-joblink-blue transition duration-150 text-base font-medium focus:outline-none">Training</button>
+                </nav>
+
+                <!-- Auth Buttons (Placeholders) -->
+                <div class="flex items-center space-x-4">
+                    <button onclick="window.location.href='loginpagejoblink.html'" class="hidden sm:inline-flex items-center px-4 py-2 border border-joblink-blue text-base font-medium rounded-xl text-joblink-blue hover:bg-joblink-blue hover:text-white transition duration-200 shadow-sm">
+                        Login
+                    </button>
+                    <button onclick="window.location.href='signuppagejoblink.html'" class="inline-flex items-center px-6 py-2 border border-transparent text-base font-medium rounded-xl text-white bg-joblink-green hover:bg-joblink-green/90 transition duration-200 shadow-custom-green">
+                        Get Started
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow relative w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        <!-- SECTION: HOME -->
+        <div id="home-section" class="section-content active">
+            <section class="text-center pt-10 pb-16">
+                <h1 class="text-5xl sm:text-6xl lg:text-7xl font-extrabold leading-tight text-joblink-dark mb-6">
+                    Verified Skills. <span class="text-joblink-blue">Instant Jobs.</span> <br/>Guaranteed Training.
+                </h1>
+                <p class="text-xl text-gray-600 mb-10 md:text-2xl max-w-3xl mx-auto">
+                    JobLink is a smart web and mobile platform created for young adults who struggle to find relevant and trustworthy job opportunities.
+                </p>
+                <div class="flex justify-center space-x-4 mb-16">
+                    <button onclick="switchSection('features')" class="inline-flex items-center px-8 py-3 border border-transparent text-lg font-bold rounded-xl text-white bg-joblink-blue hover:bg-joblink-blue/90 transition duration-300 shadow-custom-blue transform hover:scale-[1.02]">
+                        Find My Instant Job
+                    </button>
+                    <button onclick="switchSection('training')" class="inline-flex items-center px-8 py-3 border border-gray-300 text-lg font-medium rounded-xl text-joblink-dark bg-white hover:bg-gray-50 transition duration-300 transform hover:scale-[1.02]">
+                        Learn More
+                    </button>
+                </div>
+            </section>
+
+            <!-- Introduction Block with AI Mockup -->
+            <section class="bg-white rounded-3xl shadow-xl p-8 md:p-12 border border-gray-100">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                    <div>
+                        <span class="text-joblink-green font-bold tracking-wider uppercase text-sm">Welcome to JobLink</span>
+                        <h2 class="text-3xl font-bold mt-2 mb-6 text-joblink-dark">Bridging Education & Employment</h2>
+                        <div class="space-y-4 text-gray-600 leading-relaxed">
+                            <p>
+                                Looking for a new job can be a long process, but it doesn't have to be. Our platform connects you with companies that are looking for talent just like you. When you join, you'll create a profile and list your skills and past experience. We'll then verify your credentials to ensure your information is accurate.
+                            </p>
+                            <p>
+                                Once verified, our system will match you with the jobs that best fit your profile. You'll then be able to choose the company you want to work for. Before you start your new job, you'll undergo a specialized training program designed by us.
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <!-- AI Mockup Section Restored -->
+                    <div class="w-full flex justify-center p-8 bg-white rounded-3xl shadow-2xl shadow-joblink-green/20">
+                        <div class="w-full h-80 rounded-2xl bg-gradient-to-br from-joblink-blue to-joblink-green flex items-center justify-center relative overflow-hidden">
+                             <!-- Decorative element to make it look active -->
+                             <div class="absolute top-0 right-0 w-32 h-32 bg-white opacity-10 rounded-bl-full"></div>
+                             <div class="absolute bottom-0 left-0 w-24 h-24 bg-white opacity-10 rounded-tr-full"></div>
+                             
+                             <div class="text-center z-10">
+                                <i data-lucide="smartphone" class="w-16 h-16 text-white mx-auto mb-2 opacity-90"></i>
+                                <div class="text-white text-xl font-medium opacity-90">
+                                    JobLink Mobile App
+                                </div>
+                                <div class="text-white text-sm opacity-70 mt-1">
+                                    AI Matching Interface
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+        </div>
+
+        <!-- SECTION: FEATURES -->
+        <div id="features-section" class="section-content">
+            <div class="text-center mb-12 pt-4">
+                <span class="text-joblink-blue text-lg font-semibold uppercase tracking-wider">How It Works</span>
+                <h2 class="text-4xl font-extrabold text-joblink-dark mt-2">Automated Verification & AI Matching</h2>
+                <p class="mt-4 text-xl text-gray-600 max-w-3xl mx-auto">
+                    Eliminate the hassle of browsing through irrelevant job postings. We save valuable time for job seekers through automation.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <!-- Feature 1 -->
+                <div class="bg-white p-8 rounded-2xl shadow-lg border-t-4 border-joblink-blue hover:shadow-xl transition-shadow">
+                    <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center text-joblink-blue mb-6">
+                        <i data-lucide="shield-check" class="w-6 h-6"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold text-joblink-dark mb-4">Verified Credentials</h3>
+                    <p class="text-gray-600 leading-relaxed">
+                        Through its automated credential verification system, JobLink confirms the authenticity of documents such as diplomas, certificates, and IDs by cross-checking them with partner institutions. This ensures trust and accuracy from day one.
+                    </p>
+                </div>
+
+                <!-- Feature 2 -->
+                <div class="bg-white p-8 rounded-2xl shadow-lg border-t-4 border-joblink-green hover:shadow-xl transition-shadow">
+                    <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center text-joblink-green mb-6">
+                        <i data-lucide="cpu" class="w-6 h-6"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold text-joblink-dark mb-4">AI-Powered Algorithm</h3>
+                    <p class="text-gray-600 leading-relaxed">
+                        Once verified, our AI-powered algorithm analyzes your skills, qualifications, and preferences to recommend job opportunities that best fit your profile. No more endless scrolling through irrelevant listings.
+                    </p>
+                </div>
+                
+                <!-- Feature 3 -->
+                <div class="bg-white p-8 rounded-2xl shadow-lg border-t-4 border-joblink-blue hover:shadow-xl transition-shadow">
+                    <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center text-joblink-blue mb-6">
+                        <i data-lucide="zap" class="w-6 h-6"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold text-joblink-dark mb-4">Instant Employment</h3>
+                    <p class="text-gray-600 leading-relaxed">
+                        Because JobLink collaborates directly with verified partner companies, successful candidates are instantly hired upon job selection, removing the need for lengthy interviews and multiple application stages.
+                    </p>
+                </div>
+
+                <!-- Feature 4 -->
+                <div class="bg-white p-8 rounded-2xl shadow-lg border-t-4 border-joblink-green hover:shadow-xl transition-shadow">
+                    <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center text-joblink-green mb-6">
+                        <i data-lucide="book-open" class="w-6 h-6"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold text-joblink-dark mb-4">Continuous Growth</h3>
+                    <p class="text-gray-600 leading-relaxed">
+                        Even after being hired, users can continue to access JobLink’s learning modules to enhance their skills and advance their careers, ensuring you are always moving forward.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION: PARTNERSHIPS -->
+        <div id="partnerships-section" class="section-content">
+            <div class="flex flex-col lg:flex-row items-center gap-12 pt-8">
+                <div class="lg:w-1/2">
+                    <span class="text-joblink-green text-lg font-semibold uppercase tracking-wider">Our Partners</span>
+                    <h2 class="text-4xl font-extrabold text-joblink-dark mt-2 mb-6">Direct Collaboration with Industry Leaders</h2>
+                    <p class="text-lg text-gray-600 mb-6 leading-relaxed">
+                        Our goal is to handle the heavy lifting of the hiring process for our partner companies while also giving you the best possible start to your new career.
+                    </p>
+                    <p class="text-lg text-gray-600 mb-8 leading-relaxed">
+                        Because JobLink collaborates directly with verified partner companies, successful candidates are <strong class="text-joblink-blue">instantly hired</strong> upon job selection. This unique partnership model removes the need for lengthy interviews and multiple application stages.
+                    </p>
+                    <button class="inline-flex items-center px-6 py-3 border border-joblink-blue text-joblink-blue font-semibold rounded-xl hover:bg-blue-50 transition duration-200">
+                        Become a Partner
+                    </button>
+                </div>
+                <div class="lg:w-1/2 bg-white p-8 rounded-3xl shadow-xl border border-gray-100">
+                    <div class="grid grid-cols-2 gap-4">
+                        <!-- Placeholder Company Logos -->
+                        <div class="h-32 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400 font-bold border border-dashed border-gray-300">Partner 01</div>
+                        <div class="h-32 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400 font-bold border border-dashed border-gray-300">Partner 02</div>
+                        <div class="h-32 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400 font-bold border border-dashed border-gray-300">Partner 03</div>
+                        <div class="h-32 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400 font-bold border border-dashed border-gray-300">Partner 04</div>
+                    </div>
+                    <p class="text-center text-sm text-gray-400 mt-6">Trusted by innovative companies looking for young talent.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION: TRAINING -->
+        <div id="training-section" class="section-content">
+            <div class="text-center mb-12 pt-4">
+                <span class="text-joblink-blue text-lg font-semibold uppercase tracking-wider">Education & Growth</span>
+                <h2 class="text-4xl font-extrabold text-joblink-dark mt-2">Guaranteed Training Program</h2>
+                <p class="mt-4 text-xl text-gray-600 max-w-3xl mx-auto">
+                    We don't just find you a job; we make sure you succeed in it.
+                </p>
+            </div>
+
+            <div class="bg-joblink-blue rounded-3xl overflow-hidden shadow-2xl text-white">
+                <div class="flex flex-col md:flex-row">
+                    <div class="p-10 md:w-3/5 flex flex-col justify-center">
+                        <h3 class="text-3xl font-bold mb-4">Tailored to Your New Role</h3>
+                        <p class="text-blue-100 text-lg mb-6 leading-relaxed">
+                            Before you start your new job, you'll undergo a specialized training program designed by us. This ensures you're fully prepared for your new role and meets the specific needs of the company you'll be working for.
+                        </p>
+                        <ul class="space-y-3 mb-8">
+                            <li class="flex items-center"><i data-lucide="check-circle" class="w-5 h-5 mr-3 text-joblink-green"></i> Online or hybrid courses</li>
+                            <li class="flex items-center"><i data-lucide="check-circle" class="w-5 h-5 mr-3 text-joblink-green"></i> Specific job requirements</li>
+                            <li class="flex items-center"><i data-lucide="check-circle" class="w-5 h-5 mr-3 text-joblink-green"></i> Post-hire learning modules</li>
+                        </ul>
+                        <div>
+                            <button class="bg-white text-joblink-blue px-8 py-3 rounded-xl font-bold hover:bg-gray-100 transition">Explore Modules</button>
+                        </div>
+                    </div>
+                    <div class="md:w-2/5 bg-blue-600/30 flex items-center justify-center p-10">
+                         <i data-lucide="graduation-cap" class="w-32 h-32 text-white opacity-80"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-joblink-dark text-gray-400 py-10 border-t border-gray-700 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col md:flex-row justify-between items-center space-y-6 md:space-y-0">
+                <div class="flex items-center space-x-2 cursor-pointer" onclick="switchSection('home')">
+                    <!-- Footer Logo also updated -->
+                    <img src="nobgjoblink.png" alt="JobLink Logo" class="h-8 w-auto filter grayscale opacity-75" onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">
+                    <span class="text-lg font-bold text-white">JobLink</span>
+                </div>
+                
+                <nav class="flex space-x-6">
+                    <a href="#" class="hover:text-joblink-green transition duration-150 text-sm">About Us</a>
+                    <a href="#" class="hover:text-joblink-green transition duration-150 text-sm">Contact</a>
+                    <a href="#" class="hover:text-joblink-green transition duration-150 text-sm">Privacy Policy</a>
+                    <a href="#" class="hover:text-joblink-green transition duration-150 text-sm">Terms of Service</a>
+                </nav>
+                
+                <p class="text-sm">
+                    &copy; 2024 JobLink. All rights reserved.
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Main Logic Script -->
+    <script>
+        // Initialize Icons
+        lucide.createIcons();
+
+        // Navigation Logic
+        function switchSection(sectionId) {
+            // 1. Get all sections
+            const sections = document.querySelectorAll('.section-content');
+            const currentSection = document.querySelector('.section-content.active');
+            
+            // Prevent animation if clicking the same link
+            if (currentSection && currentSection.id === sectionId + '-section') return;
+
+            // 2. Update Nav Button States
+            const navButtons = document.querySelectorAll('.nav-btn');
+            navButtons.forEach(btn => btn.classList.remove('active'));
+            const activeBtn = document.getElementById('nav-' + sectionId);
+            if (activeBtn) activeBtn.classList.add('active');
+
+            // 3. Animate Out Current Section
+            if (currentSection) {
+                currentSection.classList.remove('active');
+                // Simple fade out/hide logic handled by CSS transitions mostly, 
+                // but we toggle display via class logic
+                setTimeout(() => {
+                    currentSection.style.display = 'none';
+                }, 300); // Match CSS transition time roughly or handled by class swap
+            }
+
+            // 4. Animate In New Section
+            const newSection = document.getElementById(sectionId + '-section');
+            if (newSection) {
+                // Hide others immediately to prevent stacking during quick clicks
+                sections.forEach(s => {
+                    if(s !== newSection) {
+                        s.classList.remove('active');
+                        s.style.display = 'none';
+                    }
+                });
+
+                newSection.style.display = 'block';
+                // Small delay to allow display:block to apply before adding opacity class
+                setTimeout(() => {
+                    newSection.classList.add('active');
+                }, 50);
+            }
+            
+            // Scroll to top slightly if user is far down
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Set initial state logic if needed (default is Home via HTML classes)
+    </script>
+</body>
+</html>
