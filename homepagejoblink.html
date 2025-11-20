@@ -141,10 +141,12 @@
 
 <body class="min-h-screen flex flex-col">
 
-    <!-- Firebase SDK -->
+    <!-- Firebase SDK and Logic -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        // NEW: Import Firestore
+        import { getFirestore, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCVFb86PaY0O3p9VsUVaUHbmNdw9pzy_aA",
@@ -157,24 +159,57 @@
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let currentUserUid = null;
 
         // Global Auth Handler
         window.handleLogout = async () => {
             try {
                 await signOut(auth);
                 console.log('User signed out.');
+                window.location.href = 'loginpagejoblink.html';
             } catch (error) {
                 console.error('Sign out error:', error);
             }
         };
 
-        onAuthStateChanged(auth, (user) => {
+        // Monitor Authentication State
+        onAuthStateChanged(auth, async (user) => {
             if (user) {
                 console.log('User logged in:', user.email);
-                updateUserUI(user);
+                currentUserUid = user.uid;
+
+                // 1. Display Basic Auth Info (Immediate Feedback)
+                updateUserUI({
+                    displayName: user.displayName || user.email.split('@')[0],
+                    email: user.email,
+                    dob: '' // Will be filled by database
+                });
+
+                // 2. Fetch Extended Profile from Database
+                try {
+                    const docRef = doc(db, "users", user.uid);
+                    const docSnap = await getDoc(docRef);
+
+                    if (docSnap.exists()) {
+                        const userData = docSnap.data();
+                        console.log("Database data loaded:", userData);
+                        
+                        // Update UI with Database Info
+                        updateUserUI({
+                            displayName: userData.fullName,
+                            email: userData.email,
+                            dob: userData.dob
+                        });
+                    }
+                } catch (e) {
+                    console.error("Error fetching user data: ", e);
+                }
+
             } else {
-                // window.location.href = 'loginpagejoblink.html'; // Uncomment to enforce auth
-                console.log('User not logged in (Dev Mode)');
+                // If no user is logged in, redirect to login page
+                 window.location.href = 'loginpagejoblink.html'; 
             }
         });
 
@@ -182,14 +217,87 @@
             const nameElements = document.querySelectorAll('.userNameDisplay');
             const initialElements = document.querySelectorAll('.userInitialsDisplay');
             const emailInputs = document.querySelectorAll('.userEmailInput');
+            const dobInputs = document.querySelectorAll('.userDobInput'); // New class for dob fields
             
-            nameElements.forEach(el => el.textContent = user.displayName || user.email.split('@')[0]);
+            // Update Name displays
+            nameElements.forEach(el => {
+                if (el.tagName === 'INPUT') {
+                    el.value = user.displayName;
+                } else {
+                    el.textContent = user.displayName;
+                }
+            });
             
-            const initials = (user.email.split('@')[0]).substring(0, 2).toUpperCase();
-            initialElements.forEach(el => el.textContent = initials);
+            // Update Initials
+            if (user.displayName) {
+                const initials = user.displayName.substring(0, 2).toUpperCase();
+                initialElements.forEach(el => el.textContent = initials);
+            }
             
+            // Update Email inputs
             emailInputs.forEach(el => el.value = user.email);
+
+            // Update DOB inputs
+            if (user.dob) {
+                dobInputs.forEach(el => el.value = user.dob);
+            }
         }
+
+        // Make handleSave global so the Settings form can use it
+        window.handleSave = async (formName) => {
+            // Prevent default form submission is handled in the HTML (onsubmit="event.preventDefault()...")
+            console.log('Saving ' + formName);
+            
+            if (!currentUserUid) {
+                alert("No user logged in!");
+                return;
+            }
+
+            const btn = event.submitter;
+            const originalText = btn.innerText;
+            btn.innerText = 'Saving...';
+            btn.disabled = true;
+            
+            try {
+                if (formName === 'Profile') {
+                    // Get values from inputs
+                    const newName = document.getElementById('fullName').value;
+                    const newDob = document.getElementById('dob').value;
+
+                    // Save to Firebase Firestore
+                    const docRef = doc(db, "users", currentUserUid);
+                    await updateDoc(docRef, {
+                        fullName: newName,
+                        dob: newDob
+                    });
+
+                    // Update the display name elsewhere on the page immediately
+                    document.querySelectorAll('.userNameDisplay').forEach(el => {
+                        if (el.tagName !== 'INPUT') el.textContent = newName;
+                    });
+                }
+
+                // Success Animation
+                setTimeout(() => {
+                    btn.innerText = 'Saved!';
+                    btn.classList.remove('bg-joblink-blue');
+                    btn.classList.add('bg-joblink-green');
+                    
+                    setTimeout(() => {
+                        btn.innerText = originalText;
+                        btn.classList.remove('bg-joblink-green');
+                        btn.classList.add('bg-joblink-blue');
+                        btn.disabled = false;
+                    }, 2000);
+                }, 500); // Small fake delay for UX
+
+            } catch (error) {
+                console.error("Error updating profile:", error);
+                btn.innerText = 'Error!';
+                btn.classList.add('bg-red-500');
+                btn.disabled = false;
+            }
+        };
     </script>
 
     <!-- Header / Navigation -->
@@ -215,8 +323,8 @@
                 <!-- User Profile & Logout -->
                 <div class="flex items-center space-x-4">
                     <div class="flex items-center space-x-2 text-gray-700">
-                        <span class="userNameDisplay text-sm font-medium hidden sm:inline">Guest</span>
-                        <div class="userInitialsDisplay h-8 w-8 rounded-full bg-joblink-green flex items-center justify-center text-white text-sm font-bold">G</div>
+                        <span class="userNameDisplay text-sm font-medium hidden sm:inline">Loading...</span>
+                        <div class="userInitialsDisplay h-8 w-8 rounded-full bg-joblink-green flex items-center justify-center text-white text-sm font-bold">..</div>
                     </div>
                     <button onclick="window.handleLogout()" class="text-gray-400 hover:text-red-500 transition duration-150">
                         <i data-lucide="log-out" class="w-5 h-5"></i>
@@ -318,7 +426,7 @@
         </div>
 
         <!-- ======================================================= -->
-        <!-- SECTION 2: TRAINING (UPDATED TO MATCH ORIGINAL) -->
+        <!-- SECTION 2: TRAINING (Restored Full Content) -->
         <!-- ======================================================= -->
         <div id="section-training" class="section-content">
             
@@ -328,7 +436,7 @@
                 <p class="text-gray-600 text-lg mt-1">Complete your required training to start your new job, then continue learning to advance your career.</p>
             </section>
             
-            <!-- 1. Required Training Section (For Selected Job) -->
+            <!-- 1. Required Training Section -->
             <section class="bg-white p-6 md:p-8 rounded-2xl shadow-card-shadow mb-8 border-t-4 border-joblink-blue">
                 <div class="flex flex-col sm:flex-row justify-between sm:items-center mb-6">
                     <div>
@@ -457,7 +565,7 @@
         </div>
 
         <!-- ======================================================= -->
-        <!-- SECTION 3: VERIFICATION -->
+        <!-- SECTION 3: VERIFICATION (Restored Full Content) -->
         <!-- ======================================================= -->
         <div id="section-verification" class="section-content">
             <section class="mb-8">
@@ -506,7 +614,7 @@
         </div>
 
         <!-- ======================================================= -->
-        <!-- SECTION 4: SETTINGS (UPDATED TO MATCH ORIGINAL) -->
+        <!-- SECTION 4: SETTINGS (Database Integrated) -->
         <!-- ======================================================= -->
         <div id="section-settings" class="section-content">
             
@@ -535,23 +643,26 @@
                 <!-- Right Column: Settings Forms -->
                 <div class="lg:col-span-2 space-y-8">
                     
-                    <!-- 1. Profile Information -->
+                    <!-- 1. Profile Information (Active) -->
                     <section id="profile" class="bg-white p-6 md:p-8 rounded-2xl shadow-card-shadow">
                         <h2 class="text-2xl font-bold text-joblink-dark mb-6 border-b pb-4">Profile Information</h2>
                         <form onsubmit="event.preventDefault(); handleSave('Profile')" class="space-y-4">
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
                                     <label for="fullName" class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-                                    <input type="text" id="fullName" name="fullName" placeholder="User Name" class="userNameDisplay w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-joblink-blue focus:border-joblink-blue shadow-sm">
+                                    <!-- Added userNameDisplay class so the script can fill it -->
+                                    <input type="text" id="fullName" name="fullName" placeholder="Loading..." class="userNameDisplay w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-joblink-blue focus:border-joblink-blue shadow-sm">
                                 </div>
                                 <div>
                                     <label for="dob" class="block text-sm font-medium text-gray-700 mb-1">Date of Birth</label>
-                                    <input type="date" id="dob" name="dob" value="2002-05-15" class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-joblink-blue focus:border-joblink-blue shadow-sm text-gray-500">
+                                    <!-- Added userDobInput class so the script can fill it -->
+                                    <input type="date" id="dob" name="dob" class="userDobInput w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-joblink-blue focus:border-joblink-blue shadow-sm text-gray-500">
                                 </div>
                             </div>
                             <div>
                                 <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
-                                <input type="email" id="email" name="email" placeholder="user.name@joblink.com" class="userEmailInput w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-joblink-blue focus:border-joblink-blue shadow-sm bg-gray-100" readonly>
+                                <!-- Added userEmailInput class -->
+                                <input type="email" id="email" name="email" placeholder="Loading..." class="userEmailInput w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-joblink-blue focus:border-joblink-blue shadow-sm bg-gray-100" readonly>
                                 <p class="text-xs text-gray-500 mt-1">Email address cannot be changed.</p>
                             </div>
                             
@@ -561,10 +672,10 @@
                         </form>
                     </section>
 
-                    <!-- 2. Password & Security -->
+                    <!-- 2. Password & Security (Placeholder) -->
                     <section id="password" class="bg-white p-6 md:p-8 rounded-2xl shadow-card-shadow">
                         <h2 class="text-2xl font-bold text-joblink-dark mb-6 border-b pb-4">Password & Security</h2>
-                        <form onsubmit="event.preventDefault(); handleSave('Password')" class="space-y-4">
+                        <form onsubmit="event.preventDefault(); alert('Password update not implemented in this demo')" class="space-y-4">
                             <div>
                                 <label for="currentPassword" class="block text-sm font-medium text-gray-700 mb-1">Current Password</label>
                                 <input type="password" id="currentPassword" name="currentPassword" placeholder="••••••••" class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-joblink-blue focus:border-joblink-blue shadow-sm">
@@ -579,7 +690,7 @@
                         </form>
                     </section>
 
-                    <!-- 3. Notifications -->
+                    <!-- 3. Notifications (Visual Only) -->
                     <section id="notifications" class="bg-white p-6 md:p-8 rounded-2xl shadow-card-shadow">
                         <h2 class="text-2xl font-bold text-joblink-dark mb-6 border-b pb-4">Notifications</h2>
                         <div class="space-y-4">
@@ -641,7 +752,7 @@
         </div>
 
         <!-- ======================================================= -->
-        <!-- SECTION 5: ABOUT (RESTORED FULL VERSION) -->
+        <!-- SECTION 5: ABOUT (Restored Full Content) -->
         <!-- ======================================================= -->
         <div id="section-about" class="section-content relative h-full">
             
@@ -800,11 +911,6 @@
             // 5. Scroll to top
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
-
-        // Helper to show message (reused from your code)
-        function showMessage(msg, type) {
-            console.log(msg); // Simplified for this demo
-        }
         
         // Handle Navigation Actions from buttons inside sections
         function handleNavigation(action) {
@@ -820,29 +926,6 @@
                      alert('Account scheduled for deactivation.');
                  }
              }
-        }
-        
-        // Handle Save Actions in Settings
-        function handleSave(formName) {
-            console.log('Saving ' + formName);
-            // Simulate API call
-            const btn = event.submitter;
-            const originalText = btn.innerText;
-            btn.innerText = 'Saving...';
-            btn.disabled = true;
-            
-            setTimeout(() => {
-                btn.innerText = 'Saved!';
-                btn.classList.remove('bg-joblink-blue');
-                btn.classList.add('bg-joblink-green');
-                
-                setTimeout(() => {
-                    btn.innerText = originalText;
-                    btn.classList.remove('bg-joblink-green');
-                    btn.classList.add('bg-joblink-blue');
-                    btn.disabled = false;
-                }, 2000);
-            }, 1000);
         }
     </script>
 </body>
