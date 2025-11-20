@@ -531,13 +531,23 @@
                 <!-- Right Column: Matches -->
                 <div class="lg:col-span-2 space-y-8">
                     <div class="bg-white p-6 rounded-2xl shadow-card-shadow">
-                        <h2 class="text-xl md:text-2xl font-bold text-joblink-blue mb-6 flex items-center">
-                            <i data-lucide="sparkles" class="w-6 h-6 mr-2 fill-current"></i>
-                            Top Matches
-                        </h2>
-                        <div class="space-y-4">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                            <h2 class="text-xl md:text-2xl font-bold text-joblink-blue flex items-center">
+                                <i data-lucide="sparkles" class="w-6 h-6 mr-2 fill-current"></i>
+                                Top Matches
+                            </h2>
+                            <!-- Search Bar -->
+                            <div class="flex w-full sm:w-auto">
+                                <input type="text" id="jobSearchInput" onkeyup="filterJobs()" placeholder="Search jobs..." class="w-full sm:w-64 px-4 py-2 border border-gray-300 rounded-l-lg focus:ring-joblink-blue focus:border-joblink-blue outline-none text-sm transition duration-150">
+                                <button onclick="filterJobs()" class="bg-joblink-blue text-white px-4 py-2 rounded-r-lg hover:bg-blue-600 transition duration-200 flex items-center">
+                                    <i data-lucide="search" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="space-y-4" id="jobList">
                             <!-- Job 1 -->
-                            <div class="p-4 border-l-4 border-joblink-green bg-joblink-light rounded-xl flex flex-col sm:flex-row justify-between items-start sm:items-center hover:shadow-lg transition">
+                            <div class="job-card p-4 border-l-4 border-joblink-green bg-joblink-light rounded-xl flex flex-col sm:flex-row justify-between items-start sm:items-center hover:shadow-lg transition">
                                 <div class="mb-2 sm:mb-0">
                                     <h3 class="text-lg font-bold text-joblink-dark">Junior Software Developer</h3>
                                     <p class="text-gray-600 text-sm">TechCorp Global | Remote | <span class="text-joblink-green font-semibold">95% Fit</span></p>
@@ -545,7 +555,7 @@
                                 <button class="px-4 py-2 bg-joblink-green text-white font-medium rounded-lg hover:bg-green-600 text-sm">View Job</button>
                             </div>
                             <!-- Job 2 -->
-                            <div class="p-4 border-l-4 border-joblink-blue bg-joblink-light rounded-xl flex flex-col sm:flex-row justify-between items-start sm:items-center hover:shadow-lg transition">
+                            <div class="job-card p-4 border-l-4 border-joblink-blue bg-joblink-light rounded-xl flex flex-col sm:flex-row justify-between items-start sm:items-center hover:shadow-lg transition">
                                 <div class="mb-2 sm:mb-0">
                                     <h3 class="text-lg font-bold text-joblink-dark">Digital Marketing Specialist</h3>
                                     <p class="text-gray-600 text-sm">MediaLink Agency | Hybrid | <span class="text-joblink-blue font-semibold">88% Fit</span></p>
@@ -553,6 +563,7 @@
                                 <button class="px-4 py-2 bg-joblink-blue text-white font-medium rounded-lg hover:bg-blue-600 text-sm">View Job</button>
                             </div>
                         </div>
+                        <p id="noJobsMessage" class="hidden text-center text-gray-500 py-4">No matching jobs found.</p>
                     </div>
                 </div>
             </div>
@@ -926,7 +937,7 @@
                     <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
                 </div>
                 <div class="absolute bottom-1/4 left-20 opacity-10 text-blue-400">
-                     <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+                     <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L12 3Z"/></svg>
                 </div>
             </div>
 
@@ -1074,6 +1085,38 @@
                      alert('Account scheduled for deactivation.');
                  }
              }
+        }
+
+        // --- JOB SEARCH FILTER FUNCTIONALITY ---
+        function filterJobs() {
+            const input = document.getElementById('jobSearchInput');
+            const filter = input.value.toLowerCase();
+            const jobList = document.getElementById('jobList');
+            const jobs = jobList.getElementsByClassName('job-card');
+            let hasVisibleJobs = false;
+
+            for (let i = 0; i < jobs.length; i++) {
+                const title = jobs[i].querySelector('h3').innerText;
+                const company = jobs[i].querySelector('p').innerText;
+                const textContent = title + " " + company;
+                
+                if (textContent.toLowerCase().indexOf(filter) > -1) {
+                    jobs[i].style.display = "";
+                    jobs[i].classList.add('flex'); // Restore flex if using classes
+                    hasVisibleJobs = true;
+                } else {
+                    jobs[i].style.display = "none";
+                    jobs[i].classList.remove('flex');
+                }
+            }
+
+            // Handle "No jobs found" message
+            let noJobsMsg = document.getElementById('noJobsMessage');
+            if (!hasVisibleJobs) {
+                noJobsMsg.classList.remove('hidden');
+            } else {
+                noJobsMsg.classList.add('hidden');
+            }
         }
     </script>
 </body>
