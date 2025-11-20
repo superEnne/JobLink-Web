@@ -31,10 +31,6 @@
             background-color: var(--joblink-blue);
             border-radius: 4px;
         }
-
-        .config {
-            /* This is a visual-only element for the component and does not need to be rendered */
-        }
     </style>
 
     <script>
@@ -55,19 +51,20 @@
     </script>
 </head>
 
-<body class="min-h-screen flex items-center justify-center p-4">
+<body class="min-h-screen flex items-center justify-center p-4 sm:p-6">
 
     <!-- Firebase SDK and Configuration -->
     <script type="module">
-        // Import the functions you need from the SDKs you need
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        // Import Authentication functions
         import { 
             getAuth, 
-            signInWithEmailAndPassword 
+            signInWithEmailAndPassword,
+            GoogleAuthProvider,
+            FacebookAuthProvider,
+            OAuthProvider,
+            signInWithPopup
         } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-        // Your web app's Firebase configuration
         const firebaseConfig = {
             apiKey: "AIzaSyCVFb86PaY0O3p9VsUVaUHbmNdw9pzy_aA",
             authDomain: "joblink-web.firebaseapp.com",
@@ -77,130 +74,101 @@
             appId: "1:748109357310:web:8c77e27925355c9f96c5af"
         };
 
-        // Initialize Firebase
         const app = initializeApp(firebaseConfig);
-        // Initialize Firebase Authentication
         const auth = getAuth(app);
 
-        // Make functions globally accessible
         window.handleLogin = handleLogin;
         window.handleNavigation = handleNavigation;
+        window.handleSocialLogin = handleSocialLogin;
 
-        /**
-         * Placeholder for the login process
-         */
         async function handleLogin() {
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
-            const messageBox = document.getElementById('messageBox');
 
             if (!email || !password) {
                 showMessage('Please enter both email and password.', 'error');
                 return;
             }
 
-            // Show loading
             const loginButton = document.getElementById('loginButton');
             loginButton.disabled = true;
             loginButton.textContent = 'Logging In...';
 
             try {
-                // Sign in user with email and password
                 const userCredential = await signInWithEmailAndPassword(auth, email, password);
-                // Signed in 
-                const user = userCredential.user;
-                console.log('User logged in:', user);
-
+                console.log('User logged in:', userCredential.user);
                 showMessage('Login successful! Redirecting...', 'success');
-                
-                // Redirect to the main homepage after a short delay
-                setTimeout(() => {
-                    window.location.href = 'homepagejoblink.html';
-                }, 1500);
-
+                setTimeout(() => { window.location.href = 'homepagejoblink.html'; }, 1500);
             } catch (error) {
-                const errorCode = error.code;
-                const errorMessage = error.message;
-                console.error('Login error:', errorCode, errorMessage);
-                
-                // Show a user-friendly error message
+                console.error('Login error:', error.code, error.message);
                 let friendlyMessage = 'Invalid email or password. Please try again.';
-                if (errorCode === 'auth/user-not-found' || errorCode === 'auth/invalid-credential' || errorCode === 'auth/wrong-password') {
-                    friendlyMessage = 'Invalid email or password. Please try again.';
+                if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
+                    friendlyMessage = 'Invalid credentials.';
                 }
-                
                 showMessage(friendlyMessage, 'error');
                 loginButton.disabled = false;
                 loginButton.textContent = 'Log In to My Account';
             }
         }
 
-        /**
-         * Placeholder function for navigation/redirection. 
-         * Use this function to move between your HTML files.
-         */
-        function handleNavigation(pageName) {
-            console.log(`Attempting to redirect to: ${pageName} page...`);
-            
-            if (pageName === 'Home') {
-                window.location.href = 'index.html'; // Goes to your startup page
-            } else if (pageName === 'SignUp') {
-                window.location.href = 'signuppagejoblink.html'; // Goes to your new sign up page
-            } else if (pageName === 'ForgotPassword') {
-                // You can implement password reset functionality here
-                alert('Forgot Password (Placeholder)');
+        async function handleSocialLogin(providerName) {
+            let provider;
+            if (providerName === 'google') {
+                provider = new GoogleAuthProvider();
+            } else if (providerName === 'facebook') {
+                provider = new FacebookAuthProvider();
+            } else if (providerName === 'microsoft') {
+                provider = new OAuthProvider('microsoft.com');
+            }
+
+            if (provider) {
+                try {
+                    // Note: You must enable these providers in your Firebase Console for this to work
+                    const result = await signInWithPopup(auth, provider);
+                    console.log('Social login success:', result.user);
+                    showMessage(`Welcome, ${result.user.displayName}!`, 'success');
+                    setTimeout(() => { window.location.href = 'homepagejoblink.html'; }, 1500);
+                } catch (error) {
+                    console.error('Social login error:', error);
+                    showMessage(`Login with ${providerName} failed. Check console.`, 'error');
+                }
             }
         }
 
-        /**
-         * Shows a message in the custom message box
-         * @param {string} message - The text to display
-         * @param {'success' | 'error' | 'info'} type - The type of message
-         */
+        function handleNavigation(pageName) {
+            if (pageName === 'Home') window.location.href = 'index.html';
+            else if (pageName === 'SignUp') window.location.href = 'signuppagejoblink.html';
+            else if (pageName === 'ForgotPassword') alert('Forgot Password (Placeholder)');
+        }
+
         function showMessage(message, type = 'info') {
             const messageBox = document.getElementById('messageBox');
             messageBox.textContent = message;
-            
-            // Remove old color classes
             messageBox.classList.remove('bg-joblink-blue', 'bg-joblink-green', 'bg-red-500');
-            
-            // Add new color class based on type
-            if (type === 'success') {
-                messageBox.classList.add('bg-joblink-green');
-            } else if (type === 'error') {
-                messageBox.classList.add('bg-red-500');
-            } else {
-                messageBox.classList.add('bg-joblink-blue');
-            }
+            if (type === 'success') messageBox.classList.add('bg-joblink-green');
+            else if (type === 'error') messageBox.classList.add('bg-red-500');
+            else messageBox.classList.add('bg-joblink-blue');
             
             messageBox.classList.remove('hidden');
-            
-            // Hide after 3 seconds
-            setTimeout(() => {
-                messageBox.classList.add('hidden');
-            }, 3000);
+            setTimeout(() => { messageBox.classList.add('hidden'); }, 3000);
         }
-
     </script>
 
-
-    <!-- Custom Message Box (Non-Alert Placeholder) -->
-    <div id="messageBox" class="hidden fixed top-4 left-1/2 transform -translate-x-1/2 bg-joblink-blue text-white px-6 py-3 rounded-xl shadow-lg z-50 transition duration-300">
+    <!-- Custom Message Box -->
+    <div id="messageBox" class="hidden fixed top-4 left-1/2 transform -translate-x-1/2 bg-joblink-blue text-white px-6 py-3 rounded-xl shadow-lg z-50 transition duration-300 font-medium text-sm text-center w-11/12 max-w-md">
         Message
     </div>
 
     <!-- Login Card Container -->
-    <div class="w-full max-w-5xl h-auto md:h-[600px] flex rounded-3xl overflow-hidden shadow-custom-blue bg-white">
+    <div class="w-full max-w-5xl h-auto md:min-h-[600px] flex rounded-3xl overflow-hidden shadow-custom-blue bg-white">
         
-        <!-- Left Panel: Branding & Value Proposition (Hidden on Mobile) -->
+        <!-- Left Panel: Branding (Hidden on Mobile) -->
         <div class="hidden md:flex md:w-1/2 lg:w-5/12 p-10 flex-col justify-between bg-gradient-to-br from-joblink-blue to-joblink-green text-white">
             <div>
-                <!-- Logo with Link to Home -->
                 <button onclick="handleNavigation('Home')" class="flex items-center space-x-2 focus:outline-none">
                     <img src="nobgjoblink.png" alt="JobLink Logo" class="h-10 w-auto filter brightness-0 invert">
                 </button>
             </div>
-            
             <div class="space-y-4">
                 <h1 class="text-4xl font-extrabold leading-snug">
                     <i data-lucide="zap" class="inline-block h-6 w-6 mr-2"></i>
@@ -209,36 +177,28 @@
                 <p class="text-gray-200 text-lg">
                     JobLink: Verified Skills. Instant Jobs. Guaranteed Training. Log in to transform your job search with AI automation.
                 </p>
-                <div class="mt-8">
-                    <button onclick="handleNavigation('LearnAboutAI')" class="flex items-center text-sm font-medium text-white/90 hover:text-white transition duration-200">
-                        <i data-lucide="bot" class="w-4 h-4 mr-2"></i>
-                        How Our AI Verification Works
-                    </button>
-                </div>
             </div>
-
-            <p class="text-sm text-gray-300">
-                &copy; 2024 JobLink. All rights reserved.
-            </p>
+            <p class="text-sm text-gray-300">&copy; 2024 JobLink. All rights reserved.</p>
         </div>
         
         <!-- Right Panel: Login Form -->
-        <div class="w-full md:w-1/2 lg:w-7/12 p-8 sm:p-12 lg:p-16 flex flex-col justify-center">
+        <!-- Optimized for Mobile: Reduced padding on small screens -->
+        <div class="w-full md:w-1/2 lg:w-7/12 p-6 sm:p-12 lg:p-16 flex flex-col justify-center">
             
-            <!-- Mobile Logo (Shown on Mobile) -->
-            <div class="flex justify-center md:hidden mb-10">
+            <!-- Mobile Logo -->
+            <div class="flex justify-center md:hidden mb-8">
                  <button onclick="handleNavigation('Home')" class="flex items-center space-x-2 focus:outline-none">
                     <img src="nobgjoblink.png" alt="JobLink Logo" class="h-10 w-auto">
                 </button>
             </div>
             
-            <h2 class="text-4xl font-extrabold text-joblink-dark mb-2">Welcome Back</h2>
-            <p class="text-gray-500 mb-10">Sign in to access your instant job matches and training modules.</p>
+            <div class="text-center md:text-left mb-8">
+                <h2 class="text-3xl md:text-4xl font-extrabold text-joblink-dark mb-2">Welcome Back</h2>
+                <p class="text-gray-500">Sign in to access your matches.</p>
+            </div>
 
-            <!-- IMPORTANT: Changed onsubmit to call window.handleLogin() -->
-            <form onsubmit="event.preventDefault(); window.handleLogin()" class="space-y-6">
+            <form onsubmit="event.preventDefault(); window.handleLogin()" class="space-y-5">
                 
-                <!-- Email Input -->
                 <div>
                     <label for="email" class="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
                     <div class="relative">
@@ -249,7 +209,6 @@
                     </div>
                 </div>
 
-                <!-- Password Input -->
                 <div>
                     <label for="password" class="block text-sm font-medium text-gray-700 mb-2">Password</label>
                     <div class="relative">
@@ -260,7 +219,6 @@
                     </div>
                 </div>
 
-                <!-- Forgot Password -->
                 <div class="flex justify-end">
                     <button type="button" onclick="handleNavigation('ForgotPassword')" 
                             class="text-sm font-medium text-joblink-blue hover:text-joblink-green transition duration-150 focus:outline-none">
@@ -268,14 +226,52 @@
                     </button>
                 </div>
 
-                <!-- Login Button -->
                 <button type="submit" id="loginButton"
-                        class="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-lg font-bold text-white bg-joblink-blue hover:bg-joblink-blue/90 transition duration-300 transform hover:scale-[1.01] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-joblink-blue">
-                    Log In to My Account
+                        class="w-full flex justify-center py-3.5 px-4 border border-transparent rounded-xl shadow-sm text-lg font-bold text-white bg-joblink-blue hover:bg-joblink-blue/90 transition duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-joblink-blue">
+                    Log In
                 </button>
             </form>
+
+            <!-- Social Login Divider -->
+            <div class="relative my-8">
+                <div class="absolute inset-0 flex items-center">
+                    <div class="w-full border-t border-gray-200"></div>
+                </div>
+                <div class="relative flex justify-center text-sm">
+                    <span class="px-2 bg-white text-gray-500">Or continue with</span>
+                </div>
+            </div>
+
+            <!-- Social Buttons -->
+            <div class="grid grid-cols-3 gap-3">
+                <!-- Google -->
+                <button onclick="handleSocialLogin('google')" class="flex items-center justify-center px-4 py-2.5 border border-gray-200 rounded-xl shadow-sm bg-white hover:bg-gray-50 transition duration-200">
+                    <svg class="w-6 h-6" viewBox="0 0 24 24">
+                        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.84z" fill="#FBBC05"/>
+                        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                    </svg>
+                </button>
+                
+                <!-- Facebook -->
+                <button onclick="handleSocialLogin('facebook')" class="flex items-center justify-center px-4 py-2.5 border border-gray-200 rounded-xl shadow-sm bg-white hover:bg-gray-50 transition duration-200">
+                    <svg class="w-6 h-6" fill="#1877F2" viewBox="0 0 24 24">
+                        <path d="M9.101 23.691v-7.98H6.627v-3.667h2.474v-1.58c0-4.085 2.848-5.978 5.817-5.978.953 0 1.97.05 2.938.106v3.48l-1.76.001c-1.681 0-2.272.924-2.272 2.16v1.811h4.11l-1.04 3.667h-3.07v7.98H9.101z"/>
+                    </svg>
+                </button>
+
+                <!-- Microsoft -->
+                <button onclick="handleSocialLogin('microsoft')" class="flex items-center justify-center px-4 py-2.5 border border-gray-200 rounded-xl shadow-sm bg-white hover:bg-gray-50 transition duration-200">
+                    <svg class="w-6 h-6" viewBox="0 0 23 23">
+                        <path fill="#f35325" d="M1 1h10v10H1z"/>
+                        <path fill="#81bc06" d="M12 1h10v10H12z"/>
+                        <path fill="#05a6f0" d="M1 12h10v10H1z"/>
+                        <path fill="#ffba08" d="M12 12h10v10H12z"/>
+                    </svg>
+                </button>
+            </div>
             
-            <!-- Sign Up Link -->
             <div class="mt-8 text-center text-gray-500">
                 Don't have an account? 
                 <button type="button" onclick="handleNavigation('SignUp')"
@@ -286,10 +282,8 @@
         </div>
     </div>
     
-    <!-- Initialize Lucide Icons -->
     <script>
         lucide.createIcons();
     </script>
 </body>
-
 </html>
