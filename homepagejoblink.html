@@ -144,8 +144,8 @@
     <!-- Firebase SDK and Logic -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-        // NEW: Import Firestore
+        // ADDED: updatePassword, reauthenticateWithCredential, EmailAuthProvider for password changes
+        import { getAuth, onAuthStateChanged, signOut, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
         import { getFirestore, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         const firebaseConfig = {
@@ -180,11 +180,12 @@
                 console.log('User logged in:', user.email);
                 currentUserUid = user.uid;
 
-                // 1. Display Basic Auth Info (Immediate Feedback)
+                // 1. Basic UI Update
                 updateUserUI({
                     displayName: user.displayName || user.email.split('@')[0],
                     email: user.email,
-                    dob: '' // Will be filled by database
+                    photoURL: user.photoURL, // Auth profile photo
+                    dob: '' 
                 });
 
                 // 2. Fetch Extended Profile from Database
@@ -196,11 +197,15 @@
                         const userData = docSnap.data();
                         console.log("Database data loaded:", userData);
                         
+                        // If photoURL exists in Firestore, use that preference over Auth
+                        const finalPhoto = userData.photoURL || user.photoURL;
+
                         // Update UI with Database Info
                         updateUserUI({
                             displayName: userData.fullName,
                             email: userData.email,
-                            dob: userData.dob
+                            dob: userData.dob,
+                            photoURL: finalPhoto
                         });
                     }
                 } catch (e) {
@@ -217,7 +222,8 @@
             const nameElements = document.querySelectorAll('.userNameDisplay');
             const initialElements = document.querySelectorAll('.userInitialsDisplay');
             const emailInputs = document.querySelectorAll('.userEmailInput');
-            const dobInputs = document.querySelectorAll('.userDobInput'); // New class for dob fields
+            const dobInputs = document.querySelectorAll('.userDobInput'); 
+            const avatarImages = document.querySelectorAll('.userAvatarDisplay'); // For images
             
             // Update Name displays
             nameElements.forEach(el => {
@@ -228,10 +234,23 @@
                 }
             });
             
-            // Update Initials
-            if (user.displayName) {
-                const initials = user.displayName.substring(0, 2).toUpperCase();
-                initialElements.forEach(el => el.textContent = initials);
+            // Update Profile Pictures
+            if (user.photoURL) {
+                // Show Image, Hide Initials
+                avatarImages.forEach(img => {
+                    img.src = user.photoURL;
+                    img.classList.remove('hidden');
+                });
+                initialElements.forEach(el => el.classList.add('hidden'));
+            } else {
+                // Show Initials, Hide Image
+                avatarImages.forEach(img => img.classList.add('hidden'));
+                initialElements.forEach(el => el.classList.remove('hidden'));
+                
+                if (user.displayName) {
+                    const initials = user.displayName.substring(0, 2).toUpperCase();
+                    initialElements.forEach(el => el.textContent = initials);
+                }
             }
             
             // Update Email inputs
@@ -243,11 +262,35 @@
             }
         }
 
-        // Make handleSave global so the Settings form can use it
+        // Image Compression Helper
+        function compressImage(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.src = event.target.result;
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const MAX_WIDTH = 300; // Resize to 300px width max
+                        const scaleSize = MAX_WIDTH / img.width;
+                        canvas.width = MAX_WIDTH;
+                        canvas.height = img.height * scaleSize;
+
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        
+                        // Convert to Base64 JPEG with 0.7 quality
+                        resolve(canvas.toDataURL('image/jpeg', 0.7));
+                    };
+                    img.onerror = (err) => reject(err);
+                };
+                reader.onerror = (err) => reject(err);
+            });
+        }
+
+        // Make handleSave global
         window.handleSave = async (formName) => {
-            // Prevent default form submission is handled in the HTML (onsubmit="event.preventDefault()...")
-            console.log('Saving ' + formName);
-            
             if (!currentUserUid) {
                 alert("No user logged in!");
                 return;
@@ -259,22 +302,72 @@
             btn.disabled = true;
             
             try {
+                // --- PROFILE UPDATE LOGIC ---
                 if (formName === 'Profile') {
-                    // Get values from inputs
                     const newName = document.getElementById('fullName').value;
                     const newDob = document.getElementById('dob').value;
+                    
+                    // Check for image upload
+                    const fileInput = document.getElementById('profileUpload');
+                    let photoBase64 = null;
 
-                    // Save to Firebase Firestore
-                    const docRef = doc(db, "users", currentUserUid);
-                    await updateDoc(docRef, {
+                    if (fileInput.files && fileInput.files[0]) {
+                        // Compress image before uploading to Firestore
+                        photoBase64 = await compressImage(fileInput.files[0]);
+                    }
+
+                    const updateData = {
                         fullName: newName,
                         dob: newDob
-                    });
+                    };
 
-                    // Update the display name elsewhere on the page immediately
+                    // Only add photo if it changed
+                    if (photoBase64) {
+                        updateData.photoURL = photoBase64;
+                    }
+
+                    // Save to Firestore
+                    const docRef = doc(db, "users", currentUserUid);
+                    await updateDoc(docRef, updateData);
+
+                    // Update UI immediately
                     document.querySelectorAll('.userNameDisplay').forEach(el => {
                         if (el.tagName !== 'INPUT') el.textContent = newName;
                     });
+                    
+                    if (photoBase64) {
+                        document.querySelectorAll('.userAvatarDisplay').forEach(img => {
+                            img.src = photoBase64;
+                            img.classList.remove('hidden');
+                        });
+                        document.querySelectorAll('.userInitialsDisplay').forEach(el => el.classList.add('hidden'));
+                    }
+                } 
+                
+                // --- PASSWORD UPDATE LOGIC ---
+                else if (formName === 'Password') {
+                    const currentPass = document.getElementById('currentPassword').value;
+                    const newPass = document.getElementById('newPassword').value;
+
+                    if (!currentPass || !newPass) {
+                        throw new Error("Please fill in all fields.");
+                    }
+                    
+                    if (newPass.length < 6) {
+                        throw new Error("New password must be at least 6 characters.");
+                    }
+
+                    // Re-authenticate the user first
+                    const credential = EmailAuthProvider.credential(auth.currentUser.email, currentPass);
+                    await reauthenticateWithCredential(auth.currentUser, credential);
+                    
+                    // If re-auth successful, update password
+                    await updatePassword(auth.currentUser, newPass);
+                    
+                    // Clear inputs
+                    document.getElementById('currentPassword').value = '';
+                    document.getElementById('newPassword').value = '';
+                    alert("Password updated successfully!");
                 }
 
                 // Success Animation
@@ -289,13 +382,45 @@
                         btn.classList.add('bg-joblink-blue');
                         btn.disabled = false;
                     }, 2000);
-                }, 500); // Small fake delay for UX
+                }, 500);
 
             } catch (error) {
-                console.error("Error updating profile:", error);
-                btn.innerText = 'Error!';
+                console.error("Error updating:", error);
+                btn.innerText = 'Error';
                 btn.classList.add('bg-red-500');
-                btn.disabled = false;
+                
+                // Better error messages
+                let msg = "Update failed.";
+                if (error.code === 'auth/wrong-password') msg = "Current password is incorrect.";
+                if (error.code === 'auth/weak-password') msg = "Password is too weak.";
+                if (error.message) msg = error.message;
+                
+                alert(msg);
+
+                setTimeout(() => {
+                    btn.innerText = originalText;
+                    btn.classList.remove('bg-red-500');
+                    btn.disabled = false;
+                }, 3000);
+            }
+        };
+        
+        // Trigger file input when clicking the button
+        window.triggerFileUpload = () => {
+            document.getElementById('profileUpload').click();
+        };
+        
+        // Preview image on select
+        window.previewImage = (event) => {
+            const file = event.target.files[0];
+            if(file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                   document.getElementById('settingsAvatarPreview').src = e.target.result;
+                   document.getElementById('settingsAvatarPreview').classList.remove('hidden');
+                   document.getElementById('settingsInitialsPreview').classList.add('hidden');
+                }
+                reader.readAsDataURL(file);
             }
         };
     </script>
@@ -324,7 +449,15 @@
                 <div class="flex items-center space-x-4">
                     <div class="flex items-center space-x-2 text-gray-700">
                         <span class="userNameDisplay text-sm font-medium hidden sm:inline">Loading...</span>
-                        <div class="userInitialsDisplay h-8 w-8 rounded-full bg-joblink-green flex items-center justify-center text-white text-sm font-bold">..</div>
+                        
+                        <!-- Avatar Container -->
+                        <div class="relative h-8 w-8 rounded-full overflow-hidden bg-gray-200">
+                            <!-- Image Avatar -->
+                            <img src="" alt="Profile" class="userAvatarDisplay hidden h-full w-full object-cover">
+                            <!-- Initials Fallback -->
+                            <div class="userInitialsDisplay absolute inset-0 flex items-center justify-center bg-joblink-green text-white text-sm font-bold">..</div>
+                        </div>
+
                     </div>
                     <button onclick="window.handleLogout()" class="text-gray-400 hover:text-red-500 transition duration-150">
                         <i data-lucide="log-out" class="w-5 h-5"></i>
@@ -426,7 +559,7 @@
         </div>
 
         <!-- ======================================================= -->
-        <!-- SECTION 2: TRAINING (Restored Full Content) -->
+        <!-- SECTION 2: TRAINING -->
         <!-- ======================================================= -->
         <div id="section-training" class="section-content">
             
@@ -565,7 +698,7 @@
         </div>
 
         <!-- ======================================================= -->
-        <!-- SECTION 3: VERIFICATION (Restored Full Content) -->
+        <!-- SECTION 3: VERIFICATION -->
         <!-- ======================================================= -->
         <div id="section-verification" class="section-content">
             <section class="mb-8">
@@ -646,22 +779,37 @@
                     <!-- 1. Profile Information (Active) -->
                     <section id="profile" class="bg-white p-6 md:p-8 rounded-2xl shadow-card-shadow">
                         <h2 class="text-2xl font-bold text-joblink-dark mb-6 border-b pb-4">Profile Information</h2>
-                        <form onsubmit="event.preventDefault(); handleSave('Profile')" class="space-y-4">
+                        
+                        <form onsubmit="event.preventDefault(); handleSave('Profile')" class="space-y-6">
+                            
+                            <!-- Profile Picture Upload (New) -->
+                            <div class="flex items-center space-x-6">
+                                <div class="relative h-20 w-20 rounded-full overflow-hidden bg-gray-200 border-2 border-white shadow-md">
+                                    <img id="settingsAvatarPreview" src="" alt="Profile" class="userAvatarDisplay hidden h-full w-full object-cover">
+                                    <div id="settingsInitialsPreview" class="userInitialsDisplay absolute inset-0 flex items-center justify-center bg-joblink-green text-white text-2xl font-bold">..</div>
+                                </div>
+                                <div>
+                                    <h3 class="font-medium text-gray-900">Profile Picture</h3>
+                                    <p class="text-sm text-gray-500 mb-2">JPG or PNG. Max 500KB.</p>
+                                    <button type="button" onclick="triggerFileUpload()" class="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700 font-medium transition">
+                                        Change Photo
+                                    </button>
+                                    <input type="file" id="profileUpload" accept="image/*" hidden onchange="previewImage(event)">
+                                </div>
+                            </div>
+
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
                                     <label for="fullName" class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-                                    <!-- Added userNameDisplay class so the script can fill it -->
                                     <input type="text" id="fullName" name="fullName" placeholder="Loading..." class="userNameDisplay w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-joblink-blue focus:border-joblink-blue shadow-sm">
                                 </div>
                                 <div>
                                     <label for="dob" class="block text-sm font-medium text-gray-700 mb-1">Date of Birth</label>
-                                    <!-- Added userDobInput class so the script can fill it -->
                                     <input type="date" id="dob" name="dob" class="userDobInput w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-joblink-blue focus:border-joblink-blue shadow-sm text-gray-500">
                                 </div>
                             </div>
                             <div>
                                 <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
-                                <!-- Added userEmailInput class -->
                                 <input type="email" id="email" name="email" placeholder="Loading..." class="userEmailInput w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-joblink-blue focus:border-joblink-blue shadow-sm bg-gray-100" readonly>
                                 <p class="text-xs text-gray-500 mt-1">Email address cannot be changed.</p>
                             </div>
@@ -672,17 +820,17 @@
                         </form>
                     </section>
 
-                    <!-- 2. Password & Security (Placeholder) -->
+                    <!-- 2. Password & Security -->
                     <section id="password" class="bg-white p-6 md:p-8 rounded-2xl shadow-card-shadow">
                         <h2 class="text-2xl font-bold text-joblink-dark mb-6 border-b pb-4">Password & Security</h2>
-                        <form onsubmit="event.preventDefault(); alert('Password update not implemented in this demo')" class="space-y-4">
+                        <form onsubmit="event.preventDefault(); handleSave('Password')" class="space-y-4">
                             <div>
-                                <label for="currentPassword" class="block text-sm font-medium text-gray-700 mb-1">Current Password</label>
-                                <input type="password" id="currentPassword" name="currentPassword" placeholder="••••••••" class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-joblink-blue focus:border-joblink-blue shadow-sm">
+                                <label for="currentPassword" class="block text-sm font-medium text-gray-700 mb-1">Current Password (Required)</label>
+                                <input type="password" id="currentPassword" name="currentPassword" placeholder="••••••••" class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-joblink-blue focus:border-joblink-blue shadow-sm" required>
                             </div>
                             <div>
                                 <label for="newPassword" class="block text-sm font-medium text-gray-700 mb-1">New Password</label>
-                                <input type="password" id="newPassword" name="newPassword" placeholder="Min. 8 characters" class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-joblink-blue focus:border-joblink-blue shadow-sm">
+                                <input type="password" id="newPassword" name="newPassword" placeholder="Min. 6 characters" class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-joblink-blue focus:border-joblink-blue shadow-sm" required minlength="6">
                             </div>
                             <div class="flex justify-end pt-4">
                                 <button type="submit" class="px-6 py-2 bg-joblink-blue text-white font-semibold rounded-xl hover:bg-joblink-blue/90 transition duration-200">Update Password</button>
@@ -752,7 +900,7 @@
         </div>
 
         <!-- ======================================================= -->
-        <!-- SECTION 5: ABOUT (Restored Full Content) -->
+        <!-- SECTION 5: ABOUT -->
         <!-- ======================================================= -->
         <div id="section-about" class="section-content relative h-full">
             
