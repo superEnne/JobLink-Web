@@ -31,10 +31,6 @@
             background-color: var(--joblink-green);
             border-radius: 4px;
         }
-
-        .config {
-            /* This is a visual-only element for the component and does not need to be rendered */
-        }
     </style>
 
     <script>
@@ -55,25 +51,25 @@
     </script>
 </head>
 
-<body class="min-h-screen flex items-center justify-center p-4">
+<body class="min-h-screen flex items-center justify-center p-4 sm:p-6">
 
     <!-- Firebase SDK and Configuration -->
     <script type="module">
-        // Import the functions you need from the SDKs you need
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        // Import Authentication functions
         import { 
             getAuth, 
-            createUserWithEmailAndPassword 
+            createUserWithEmailAndPassword,
+            GoogleAuthProvider,
+            FacebookAuthProvider,
+            OAuthProvider,
+            signInWithPopup
         } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-        // NEW: Import Firestore Database functions
         import { 
             getFirestore, 
             doc, 
             setDoc 
         } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-        // Your web app's Firebase configuration
         const firebaseConfig = {
             apiKey: "AIzaSyCVFb86PaY0O3p9VsUVaUHbmNdw9pzy_aA",
             authDomain: "joblink-web.firebaseapp.com",
@@ -83,24 +79,19 @@
             appId: "1:748109357310:web:8c77e27925355c9f96c5af"
         };
 
-        // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
-        // Initialize Database
         const db = getFirestore(app);
 
-        // Make functions globally accessible
         window.handleSignUp = handleSignUp;
         window.handleNavigation = handleNavigation;
+        window.handleSocialLogin = handleSocialLogin;
 
-        /**
-         * Handles the sign-up process with Firebase Auth AND Firestore Database
-         */
         async function handleSignUp() {
             const name = document.getElementById('fullName').value;
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
-            const dob = document.getElementById('dob').value; // Capture Date of Birth
+            const dob = document.getElementById('dob').value; 
             const terms = document.getElementById('terms').checked;
 
             if (!name || !email || !password || !dob) {
@@ -112,47 +103,31 @@
                 return;
             }
 
-            // Show loading state
             const signUpButton = document.getElementById('signUpButton');
             signUpButton.disabled = true;
             signUpButton.textContent = 'Creating Account...';
 
             try {
-                // 1. Create the Authentication User
                 const userCredential = await createUserWithEmailAndPassword(auth, email, password);
                 const user = userCredential.user;
-                console.log('User created:', user.uid);
                 
-                // 2. Save the User's Profile to the Database (Firestore)
-                // We use setDoc to create a document with the specific User ID
                 await setDoc(doc(db, "users", user.uid), {
                     fullName: name,
                     email: email,
-                    dob: dob, // Saving the birthday here
+                    dob: dob,
                     createdAt: new Date().toISOString(),
                     role: 'candidate',
-                    verified: false // Default verification status
+                    verified: false 
                 });
 
                 showMessage('Account created successfully! Redirecting...', 'success');
-                
-                // Redirect to the main homepage after a short delay
-                setTimeout(() => {
-                    window.location.href = 'homepagejoblink.html';
-                }, 1500);
+                setTimeout(() => { window.location.href = 'homepagejoblink.html'; }, 1500);
 
             } catch (error) {
-                const errorCode = error.code;
-                const errorMessage = error.message;
-                console.error('Sign up error:', errorCode, errorMessage);
-                
-                // Show a user-friendly error message
+                console.error('Sign up error:', error.code, error.message);
                 let friendlyMessage = 'An error occurred. Please try again.';
-                if (errorCode === 'auth/email-already-in-use') {
-                    friendlyMessage = 'This email address is already in use.';
-                } else if (errorCode === 'auth/weak-password') {
-                    friendlyMessage = 'Password is too weak. Please use at least 6 characters.';
-                }
+                if (error.code === 'auth/email-already-in-use') friendlyMessage = 'This email address is already in use.';
+                else if (error.code === 'auth/weak-password') friendlyMessage = 'Password is too weak. Please use at least 6 characters.';
                 
                 showMessage(friendlyMessage, 'error');
                 signUpButton.disabled = false;
@@ -160,48 +135,70 @@
             }
         }
 
-        function handleNavigation(pageName) {
-            if (pageName === 'Home') {
-                window.location.href = 'index.html'; 
-            } else if (pageName === 'Login') {
-                window.location.href = 'loginpagejoblink.html'; 
-            } else if (pageName === 'Terms') {
-                alert('Terms of Service (Placeholder)');
+        async function handleSocialLogin(providerName) {
+            let provider;
+            if (providerName === 'google') {
+                provider = new GoogleAuthProvider();
+            } else if (providerName === 'facebook') {
+                provider = new FacebookAuthProvider();
+            } else if (providerName === 'microsoft') {
+                provider = new OAuthProvider('microsoft.com');
             }
+
+            if (provider) {
+                try {
+                    // Note: You must enable these providers in your Firebase Console for this to work
+                    const result = await signInWithPopup(auth, provider);
+                    const user = result.user;
+                    
+                    // Create a basic user doc if it doesn't exist (optional check needed in real app)
+                    await setDoc(doc(db, "users", user.uid), {
+                        fullName: user.displayName,
+                        email: user.email,
+                        createdAt: new Date().toISOString(),
+                        role: 'candidate',
+                        verified: false 
+                    }, { merge: true });
+
+                    showMessage(`Welcome, ${user.displayName}!`, 'success');
+                    setTimeout(() => { window.location.href = 'homepagejoblink.html'; }, 1500);
+                } catch (error) {
+                    console.error('Social login error:', error);
+                    showMessage(`Login with ${providerName} failed. Check console.`, 'error');
+                }
+            }
+        }
+
+        function handleNavigation(pageName) {
+            if (pageName === 'Home') window.location.href = 'index.html';
+            else if (pageName === 'Login') window.location.href = 'loginpagejoblink.html';
+            else if (pageName === 'Terms') alert('Terms of Service (Placeholder)');
         }
 
         function showMessage(message, type = 'info') {
             const messageBox = document.getElementById('messageBox');
             messageBox.textContent = message;
             messageBox.classList.remove('bg-joblink-blue', 'bg-joblink-green', 'bg-red-500');
-            
-            if (type === 'success') {
-                messageBox.classList.add('bg-joblink-green');
-            } else if (type === 'error') {
-                messageBox.classList.add('bg-red-500');
-            } else {
-                messageBox.classList.add('bg-joblink-blue');
-            }
+            if (type === 'success') messageBox.classList.add('bg-joblink-green');
+            else if (type === 'error') messageBox.classList.add('bg-red-500');
+            else messageBox.classList.add('bg-joblink-blue');
             
             messageBox.classList.remove('hidden');
-            setTimeout(() => {
-                messageBox.classList.add('hidden');
-            }, 3000);
+            setTimeout(() => { messageBox.classList.add('hidden'); }, 3000);
         }
     </script>
 
-    <!-- Custom Message Box (Non-Alert Placeholder) -->
-    <div id="messageBox" class="hidden fixed top-4 left-1/2 transform -translate-x-1/2 bg-joblink-blue text-white px-6 py-3 rounded-xl shadow-lg z-50 transition duration-300">
+    <!-- Custom Message Box -->
+    <div id="messageBox" class="hidden fixed top-4 left-1/2 transform -translate-x-1/2 bg-joblink-blue text-white px-6 py-3 rounded-xl shadow-lg z-50 transition duration-300 font-medium text-sm text-center w-11/12 max-w-md">
         Message
     </div>
 
     <!-- Sign Up Card Container -->
-    <div class="w-full max-w-5xl h-auto flex rounded-3xl overflow-hidden shadow-custom-green bg-white">
+    <div class="w-full max-w-5xl h-auto md:min-h-[700px] flex rounded-3xl overflow-hidden shadow-custom-green bg-white">
         
-        <!-- Left Panel: Branding & Value Proposition (Hidden on Mobile) -->
+        <!-- Left Panel: Branding (Hidden on Mobile) -->
         <div class="hidden md:flex md:w-1/2 lg:w-5/12 p-10 flex-col justify-between bg-gradient-to-br from-joblink-green to-joblink-blue text-white">
             <div>
-                <!-- Logo with Link to Home -->
                 <button onclick="handleNavigation('Home')" class="flex items-center space-x-2 focus:outline-none">
                     <img src="nobgjoblink.png" alt="JobLink Logo" class="h-10 w-auto filter brightness-0 invert">
                 </button>
@@ -215,38 +212,31 @@
                 <p class="text-gray-200 text-lg">
                     Join JobLink to instantly verify your credentials and access tailored training for guaranteed job placement.
                 </p>
-                <div class="mt-8">
-                    <button onclick="handleNavigation('LearnAboutTraining')" class="flex items-center text-sm font-medium text-white/90 hover:text-white transition duration-200">
-                        <i data-lucide="graduation-cap" class="w-4 h-4 mr-2"></i>
-                        Explore Our Training Guarantee
-                    </button>
-                </div>
             </div>
 
-            <p class="text-sm text-gray-300">
-                &copy; 2024 JobLink. All rights reserved.
-            </p>
+            <p class="text-sm text-gray-300">&copy; 2024 JobLink. All rights reserved.</p>
         </div>
         
         <!-- Right Panel: Sign Up Form -->
-        <div class="w-full md:w-1/2 lg:w-7/12 p-8 sm:p-12 lg:p-16 flex flex-col justify-center">
+        <!-- Optimized for Mobile -->
+        <div class="w-full md:w-1/2 lg:w-7/12 p-6 sm:p-10 lg:p-12 flex flex-col justify-center">
             
-            <!-- Mobile Logo (Shown on Mobile) -->
-            <div class="flex justify-center md:hidden mb-10">
+            <!-- Mobile Logo -->
+            <div class="flex justify-center md:hidden mb-6">
                  <button onclick="handleNavigation('Home')" class="flex items-center space-x-2 focus:outline-none">
                     <img src="nobgjoblink.png" alt="JobLink Logo" class="h-10 w-auto">
                 </button>
             </div>
             
-            <h2 class="text-4xl font-extrabold text-joblink-dark mb-2">Create Your Account</h2>
-            <p class="text-gray-500 mb-8">Start your seamless journey to instant job placement.</p>
+            <div class="text-center md:text-left mb-6">
+                <h2 class="text-3xl md:text-4xl font-extrabold text-joblink-dark mb-2">Create Your Account</h2>
+                <p class="text-gray-500">Start your seamless journey to instant job placement.</p>
+            </div>
 
-            <!-- IMPORTANT: Changed onsubmit to call window.handleSignUp() -->
             <form onsubmit="event.preventDefault(); window.handleSignUp()" class="space-y-4">
                 
-                <!-- Full Name Input -->
                 <div>
-                    <label for="fullName" class="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+                    <label for="fullName" class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
                     <div class="relative">
                         <i data-lucide="user" class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400"></i>
                         <input type="text" id="fullName" name="fullName" required placeholder="John Doe"
@@ -255,9 +245,8 @@
                     </div>
                 </div>
 
-                <!-- Email Input -->
                 <div>
-                    <label for="email" class="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
+                    <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
                     <div class="relative">
                         <i data-lucide="mail" class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400"></i>
                         <input type="email" id="email" name="email" required placeholder="name@joblink.com"
@@ -266,9 +255,8 @@
                     </div>
                 </div>
                 
-                <!-- Date of Birth (Age Check) -->
                 <div>
-                    <label for="dob" class="block text-sm font-medium text-gray-700 mb-2">Date of Birth (18-25 Target Age)</label>
+                    <label for="dob" class="block text-sm font-medium text-gray-700 mb-1">Date of Birth</label>
                     <div class="relative">
                         <i data-lucide="calendar" class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400"></i>
                         <input type="date" id="dob" name="dob" required 
@@ -277,9 +265,8 @@
                     </div>
                 </div>
 
-                <!-- Password Input -->
                 <div>
-                    <label for="password" class="block text-sm font-medium text-gray-700 mb-2">Create Password</label>
+                    <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Create Password</label>
                     <div class="relative">
                         <i data-lucide="lock" class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400"></i>
                         <input type="password" id="password" name="password" required placeholder="•••••••• (Min 6 Characters)"
@@ -288,8 +275,7 @@
                     </div>
                 </div>
                 
-                <!-- Terms and AI Verification Checkbox -->
-                <div class="pt-2">
+                <div class="pt-1">
                     <div class="flex items-start">
                         <div class="flex items-center h-5">
                             <input id="terms" name="terms" type="checkbox" required
@@ -302,14 +288,52 @@
                     </div>
                 </div>
 
-                <!-- Sign Up Button -->
                 <button type="submit" id="signUpButton"
                         class="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-md text-lg font-bold text-white bg-joblink-green hover:bg-joblink-green/90 transition duration-300 transform hover:scale-[1.01] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-joblink-green">
                     Create Verified Account
                 </button>
             </form>
+
+             <!-- Social Login Divider -->
+             <div class="relative my-6">
+                <div class="absolute inset-0 flex items-center">
+                    <div class="w-full border-t border-gray-200"></div>
+                </div>
+                <div class="relative flex justify-center text-sm">
+                    <span class="px-2 bg-white text-gray-500">Or sign up with</span>
+                </div>
+            </div>
+
+            <!-- Social Buttons -->
+            <div class="grid grid-cols-3 gap-3">
+                <!-- Google -->
+                <button onclick="handleSocialLogin('google')" class="flex items-center justify-center px-4 py-2 border border-gray-200 rounded-xl shadow-sm bg-white hover:bg-gray-50 transition duration-200">
+                    <svg class="w-6 h-6" viewBox="0 0 24 24">
+                        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.84z" fill="#FBBC05"/>
+                        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                    </svg>
+                </button>
+                
+                <!-- Facebook -->
+                <button onclick="handleSocialLogin('facebook')" class="flex items-center justify-center px-4 py-2 border border-gray-200 rounded-xl shadow-sm bg-white hover:bg-gray-50 transition duration-200">
+                    <svg class="w-6 h-6" fill="#1877F2" viewBox="0 0 24 24">
+                        <path d="M9.101 23.691v-7.98H6.627v-3.667h2.474v-1.58c0-4.085 2.848-5.978 5.817-5.978.953 0 1.97.05 2.938.106v3.48l-1.76.001c-1.681 0-2.272.924-2.272 2.16v1.811h4.11l-1.04 3.667h-3.07v7.98H9.101z"/>
+                    </svg>
+                </button>
+
+                <!-- Microsoft -->
+                <button onclick="handleSocialLogin('microsoft')" class="flex items-center justify-center px-4 py-2 border border-gray-200 rounded-xl shadow-sm bg-white hover:bg-gray-50 transition duration-200">
+                    <svg class="w-6 h-6" viewBox="0 0 23 23">
+                        <path fill="#f35325" d="M1 1h10v10H1z"/>
+                        <path fill="#81bc06" d="M12 1h10v10H12z"/>
+                        <path fill="#05a6f0" d="M1 12h10v10H1z"/>
+                        <path fill="#ffba08" d="M12 12h10v10H12z"/>
+                    </svg>
+                </button>
+            </div>
             
-            <!-- Login Link -->
             <div class="mt-8 text-center text-gray-500">
                 Already have an account? 
                 <button type="button" onclick="handleNavigation('Login')"
@@ -320,10 +344,8 @@
         </div>
     </div>
     
-    <!-- Initialize Lucide Icons -->
     <script>
         lucide.createIcons();
     </script>
 </body>
-
 </html>
